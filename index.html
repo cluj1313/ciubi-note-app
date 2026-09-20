@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>My Notes</title>
+<title>Ciubi Note</title>
 <style>
   :root{
     --bg:#1c1c1e;
@@ -308,7 +308,7 @@
             <div class="dropdown-item" data-action="settings">Setări</div>
           </div>
         </div>
-        <div class="app-title" id="appTitle">My Notes</div>
+        <div class="app-title" id="appTitle">Ciubi Note</div>
       </div>
       <div class="topbar-right">
         <button class="icon-btn" id="undoBtn" title="Anulează ultima acțiune" style="opacity:.35;">
@@ -453,7 +453,7 @@
 <div class="overlay" id="tabOverlay">
   <div class="sheet">
     <h3>Tab nou</h3>
-    <input type="text" id="tabNameInput" placeholder="Nume tab (ex: Trading)">
+    <input type="text" id="tabNameInput" placeholder="Nume tab (ex: Cumpărături)">
     <div class="sheet-actions">
       <button class="btn btn-cancel" id="cancelTabBtn">Anulează</button>
       <button class="btn btn-save" id="saveTabBtn">Adaugă</button>
@@ -705,35 +705,149 @@
   const TAB_COLORS = ['#f4c430','#2c4a6e','#ffffff','#34d058','#1b5e20','#7be495','#f28c00','#f4a13a','#8e3fd6','#5b8def','#e05c5c','#4dd0c8','#a7c623','#c2185b','#5d4037','#16324f'];
   const GEAR_ID = '__manage__';
 
-  const STORAGE_KEY = 'wenote-mockup-data-v3';
+  const STORAGE_KEY = 'wenote-mockup-data-v4';
 
   function cryptoId(){ return 'e' + Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
 
   const MONTHS = ['Ian','Feb','Mar','Apr','Mai','Iun','Iul','Aug','Sep','Oct','Noi','Dec'];
   function todayLabel(){ const d=new Date(); return d.getDate()+' '+MONTHS[d.getMonth()]; }
+const DEMO_AUDIO = 'data:audio/wav;base64,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';
 
+  function L(type, text, done){ return {id:cryptoId(), type:type, text:text, done:!!done}; }
+  function E(o){
+    return {
+      id: cryptoId(),
+      tabId: o.tab,
+      title: o.title,
+      color: o.color || 'default',
+      date: o.date || '21 Sep',
+      pinned: !!o.pinned,
+      reminder: o.reminder || null,
+      checked: !!o.checked,
+      locked: false,
+      sticky: !!o.sticky,
+      archived: !!o.archived,
+      trashed: !!o.trashed,
+      lines: o.lines || [L('text','',false)],
+      attachments: o.att || []
+    };
+  }
   function defaultData(){
     return {
-      activeTab: 'trading',
-      settings: { pinnedDefault: true, pin: null, alarmSound: 'chime', alarmVolume: 0.7, textScale: 1 },
+      activeTab: 'urgente',
+      settings: { pinnedDefault: false, pin: null, alarmSound: 'chime', alarmVolume: 0.7, textScale: 1 },
       tabs: [
-        {id:'lucru', name:'In lucru', color:'#ffffff'},
-        {id:'health', name:'Health', color:'#34d058'},
-        {id:'trading', name:'Trading', color:'#1b5e20'},
-        {id:'quant', name:'LuxAlgo - Quant', color:'#f4c430'},
-        {id:'apps', name:'Aplicații 📱', color:'#7be495'},
+        {id:'urgente', name:'Urgențe', color:'#e05c5c'},
+        {id:'cumparaturi', name:'Cumpărături', color:'#f28c00'},
+        {id:'diverse', name:'Diverse', color:'#ffffff'},
+        {id:'sanatate', name:'Sănătate', color:'#34d058'},
+        {id:'clienti', name:'Clienți', color:'#5b8def'},
+        {id:'utilitati', name:'Utilități plăți', color:'#f4c430'}
       ],
       entries: [
-        {id:cryptoId(), tabId:'trading', title:'Chat GPT - Astra', body:'Construiește indicatorul, testează-l, identifică erorile, corectează-l și verifică rezultatul.”\n\nOpenAI spune că Astra este disponibil în prezent în ChatGPT Work, Codex și API', color:'pink', date:'13 Sep', pinned:true, reminder:null},
-        {id:cryptoId(), tabId:'trading', title:'Ciubi - Liquidity Swept 1H & 4H - Claude', body:'', color:'blue', date:'27 Aug', pinned:true, reminder:null},
-        {id:cryptoId(), tabId:'trading', title:'Prompt - Ciubi - Liquidity swept for 1H & 4H', body:'', color:'blue', date:'27 Aug', pinned:true, reminder:null},
-        {id:cryptoId(), tabId:'trading', title:'1H și 4H - external sweep pe ambele părți', body:'', color:'blue', date:'27 Aug', pinned:true, reminder:null},
-        {id:cryptoId(), tabId:'trading', title:'Candle weakening with smaller candles or NOT?', body:'', color:'blue', date:'27 Aug', pinned:true, reminder:null},
-        {id:cryptoId(), tabId:'trading', title:'Liquidity sweep or not', body:'', color:'gray', date:'16 Aug', pinned:true, reminder:null},
-        {id:cryptoId(), tabId:'trading', title:'0. Mark Day Type - correctly !!', body:'', color:'default', date:'15 Apr', pinned:true, reminder:null},
-        {id:cryptoId(), tabId:'trading', title:'1. BIAS Alignment 4H structure + 4H EMA+ 5m', body:'', color:'default', date:'15 Apr', pinned:true, reminder:null},
-        {id:cryptoId(), tabId:'trading', title:'2. SWEEP LIQUIDITY', body:'', color:'default', date:'15 Apr', pinned:true, reminder:null},
-        {id:cryptoId(), tabId:'trading', title:'3. REACTION TO PDH & PDL', body:'', color:'default', date:'15 Apr', pinned:true, reminder:null},
+        E({tab:'urgente', title:'Cum folosești bara de sus', color:'red', pinned:true, lines:[
+          L('text','Ciubi Note e caietul de buzunar. Fiecare tab e un sertar. Astea sunt exemple, nu notițe personale.',0),
+          L('bullet','☰  Meniu: Toate notițele, Arhivă, Coș de gunoi, Setări',0),
+          L('bullet','Săgeata înapoi (stânga, sus) anulează ultima acțiune',0),
+          L('bullet','Icoana de document cu + face o notiță nouă în tabul curent',0),
+          L('bullet','Lupa caută după titlu, în toate taburile',0),
+          L('bullet','Butonul rotund + din colțul de jos adaugă tot o notiță nouă',0)
+        ]}),
+        E({tab:'urgente', title:'Ce faci când e urgent', color:'orange', pinned:true, reminder:{date:'2026-09-22', time:'08:00', repeat:'Does not repeat'}, lines:[
+          L('number','Deschide notița (apasă pe titlu)',0),
+          L('number','Ceasul de jos pune un reminder cu dată și oră',0),
+          L('number','Pinul (meniul ⋮ → Pin) o ține sus, la Fixate',0),
+          L('number','Paleta de jos schimbă culoarea, ca să o vezi din listă',0),
+          L('text','Icoana de ceas de pe rând înseamnă că are reminder.',0)
+        ]}),
+        E({tab:'urgente', title:'Apel ratat — exemplu arhivat', color:'gray', archived:true, lines:[
+          L('text','Arhiva nu șterge. Meniul ☰ → Arhivă. Din notiță: ⋮ → Archive.',0)
+        ]}),
+        E({tab:'urgente', title:'Notiță ștearsă (exemplu)', color:'gray', trashed:true, lines:[
+          L('text','Ștergerea o duce în Coș (☰ → Coș de gunoi). De acolo o poți restaura sau o ștergi definitiv.',0)
+        ]}),
+
+        E({tab:'cumparaturi', title:'Listă de cumpărături', color:'yellow', pinned:true, lines:[
+          L('checkbox','Pâine neagră',1),
+          L('checkbox','Lapte 3,5%',1),
+          L('checkbox','Ouă 10 buc',0),
+          L('checkbox','Roșii și castraveți',0),
+          L('checkbox','Detergent rufe',0),
+          L('text','Bifele se pun din meniul ⋮ → Checkboxes. Apasă pătratul ca să bifezi. Linia cu + Adaugă o linie continuă lista.',0)
+        ]}),
+        E({tab:'cumparaturi', title:'Cum editezi o listă', color:'orange', lines:[
+          L('bullet','Titlul se scrie sus, în notiță',0),
+          L('bullet','⋮ → Bullets = puncte. Numbered list = 1, 2, 3',0),
+          L('bullet','Ține apăsat pe o notiță în listă ca să selectezi mai multe',0),
+          L('bullet','Cele două linii din stânga (mânerul) o tragi ca să schimbi ordinea',0)
+        ]}),
+        E({tab:'cumparaturi', title:'Listă veche — în arhivă', color:'gray', archived:true, lines:[
+          L('checkbox','Făină',1),
+          L('checkbox','Ulei',1),
+          L('text','Gata cumpărată. Arhivarea o scoate din tab, dar rămâne la ☰ → Arhivă.',0)
+        ]}),
+
+        E({tab:'diverse', title:'Toate butoanele din notiță', color:'navy', pinned:true, lines:[
+          L('text','Jos, în notița deschisă:',0),
+          L('bullet','Paleta = culoarea fundalului',0),
+          L('bullet','Eticheta (ac) = mută notița în alt tab',0),
+          L('bullet','Ceasul = reminder',0),
+          L('bullet','Agrafa = poză, poză din cameră, desen sau înregistrare audio',0),
+          L('bullet','Creionul = redenumești titlul',0),
+          L('bullet','⋮ = pin, bifat, lacăt PIN, stick (stea sus), share, duplicat, arhivă, ștergere',0),
+          L('bullet','Bifa din dreapta jos salvează și închide',0)
+        ]}),
+        E({tab:'diverse', title:'Taburi: adaugă, culoare, ordine', color:'purple', lines:[
+          L('number','+ de lângă taburi face un tab nou',0),
+          L('number','Roata dințată deschide gestionarea: redenumire, culoare, ștergere, tragere pentru ordine',0),
+          L('number','Un tab poate fi blocat cu PIN din Setări',0)
+        ]}),
+        E({tab:'diverse', title:'Ciornă ștearsă', color:'gray', trashed:true, lines:[
+          L('text','Exemplu în coș. Nimic important. Restaurează sau golește coșul din Setări / ecranul Coș.',0)
+        ]}),
+
+        E({tab:'sanatate', title:'Rutină de dimineață', color:'green', pinned:true, lines:[
+          L('number','Pahar de apă',0),
+          L('number','Plimbare 20 min',0),
+          L('number','Programare control — pune reminder din ceas',0),
+          L('text','Lista numerotată: ⋮ → Numbered list. Nu e un dosar medical, e un memento personal.',0)
+        ]}),
+        E({tab:'sanatate', title:'Rețetă — cu poză exemplu', color:'teal', lines:[
+          L('text','Agrafa de jos → Choose image sau Take photo. Desenul e pentru o schiță rapidă. Pozele de mai jos sunt exemple, nu documente reale.',0)
+        ], att:[
+          {id:'att-img-a', type:'image', dataUrl: 'note-demo-a.jpg'},
+          {id:'att-img-b', type:'image', dataUrl: 'note-demo-b.jpg'}
+        ]}),
+
+        E({tab:'clienti', title:'Fișă client — model', color:'blue', pinned:true, lines:[
+          L('text','Nume: exemplu. Telefon: 07xx. Oraș: Cluj.',0),
+          L('bullet','Ce s-a discutat (scurt)',0),
+          L('bullet','Ce a rămas de trimis',0),
+          L('bullet','Următorul apel — pune reminder',0),
+          L('text','Nu pune date sensibile pe un telefon partajat. Lacătul (⋮ → Lock) cere PIN-ul din Setări.',0)
+        ]}),
+        E({tab:'clienti', title:'Notă vocală — exemplu', color:'indigo', lines:[
+          L('text','Agrafa → Recording. Apasă rotundul, vorbește, Salvează. Mai jos e un sunet scurt de demonstrație — apasă play.',0)
+        ], att:[
+          {id:'att-aud', type:'audio', dataUrl: DEMO_AUDIO}
+        ]}),
+
+        E({tab:'utilitati', title:'Plăți luna aceasta', color:'yellow', pinned:true, lines:[
+          L('checkbox','Curent',1),
+          L('checkbox','Gaz',0),
+          L('checkbox','Apă',0),
+          L('checkbox','Internet',0),
+          L('checkbox','Întreținere',0),
+          L('text','Bifează după ce ai plătit. Mută notița cu eticheta (acul) dacă vrei alt tab.',0)
+        ]}),
+        E({tab:'utilitati', title:'Scadențe — cu reminder', color:'brown', reminder:{date:'2026-09-25', time:'09:00', repeat:'Monthly'}, lines:[
+          L('number','Verifică soldul',0),
+          L('number','Plătește restanța',0),
+          L('number','Păstrează dovada (poză, agrafa)',0)
+        ]}),
+        E({tab:'utilitati', title:'Factură veche — arhivă', color:'gray', archived:true, lines:[
+          L('text','Plătită. Stă la ☰ → Arhivă, nu mai încurcă tabul.',0)
+        ]})
       ]
     };
   }
