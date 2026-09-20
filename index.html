@@ -1,0 +1,2877 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>My Notes</title>
+<style>
+  :root{
+    --bg:#1c1c1e;
+    --bg-elevated:#2b2b2d;
+    --sheet-light:#eef0f1;
+    --text:#f2f2f2;
+    --text-dim:#9a9a9d;
+    --tab-active:#3a9d3a;
+    --tab-inactive:#5a5a5d;
+    --accent:#f2a71b;
+    --fs-scale:1;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{
+    margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    height:100%;overscroll-behavior:none;
+  }
+  #app{position:relative;height:100vh;overflow:hidden;}
+  .page{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--bg);}
+  .page.hidden{display:none;}
+  .hidden{display:none !important;}
+
+  /* ---------- Header (list) ---------- */
+  header.topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:9px 12px;background:var(--bg);flex-shrink:0;
+  }
+  .topbar-left{display:flex;align-items:center;gap:10px;min-width:0;}
+  .icon-btn{
+    background:none;border:none;color:var(--text);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;padding:5px;border-radius:50%;
+  }
+  .icon-btn:active{background:rgba(255,255,255,0.08);}
+  .icon-btn svg{width:19px;height:19px;}
+  .app-title{font-size:17px;font-weight:700;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .topbar-right{display:flex;align-items:center;gap:6px;position:relative;}
+
+  /* ---------- Tabs ---------- */
+  .tabs-wrap{position:relative;border-bottom:2px solid #2e7d32;flex-shrink:0;}
+  .tabs{
+    display:flex;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;
+    gap:2px;padding:0 6px;
+  }
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab{
+    flex:0 0 auto;padding:8px 14px;font-size:13px;font-weight:700;
+    color:#e6e6e6;background:var(--tab-inactive);cursor:pointer;
+    white-space:nowrap;border-radius:10px 10px 0 0;
+    display:flex;align-items:center;gap:6px;position:relative;
+    transition:background .15s;user-select:none;
+  }
+  .tab.add-tab{background:transparent;color:var(--text-dim);font-weight:600;}
+  .tab.active{background:var(--tab-active);color:#fff;}
+  .tab.active::after{
+    content:'';position:absolute;left:50%;bottom:-2px;transform:translateX(-50%);
+    width:18px;height:4px;border-radius:3px;background:#fff;
+  }
+  .tab.gear-tab{background:var(--tab-inactive);padding:8px 14px;display:flex;align-items:center;justify-content:center;border-radius:10px 10px 0 0;}
+  .tab.gear-tab svg{width:16px;height:16px;}
+  .tab.gear-tab.active{background:#3a7bd5;color:#fff;}
+
+  /* ---------- List body ---------- */
+  .body-scroll{flex:1;overflow-y:auto;padding-bottom:80px;-webkit-overflow-scrolling:touch;}
+  .body-scroll.swiping{transition:none;}
+  .section-label{padding:10px 14px 4px;font-size:12px;color:var(--text-dim);font-weight:600;}
+
+  .entry{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 14px;cursor:pointer;position:relative;
+    border-bottom:1px solid rgba(255,255,255,0.04);
+  }
+  .entry-handle{color:inherit;opacity:.55;cursor:grab;flex-shrink:0;padding:4px 8px 4px 0;touch-action:none;}
+  .entry-handle svg{width:15px;height:15px;display:block;}
+  .entry-text{font-size:calc(14.5px * var(--fs-scale));font-weight:600;line-height:1.25;flex:1;padding-right:10px;word-break:break-word;}
+  .entry-right{display:flex;align-items:center;gap:7px;flex-shrink:0;}
+  .entry-date{font-size:12.5px;font-weight:700;opacity:.85;white-space:nowrap;}
+  .pin-icon{width:13px;height:13px;flex-shrink:0;opacity:.9;}
+  .reminder-icon{width:12px;height:12px;flex-shrink:0;opacity:.85;}
+  .empty-state{text-align:center;color:var(--text-dim);padding:50px 24px;font-size:13.5px;}
+  .entry{user-select:none;touch-action:pan-y;}
+  .entry.dragging{box-shadow:0 6px 16px rgba(0,0,0,0.5);opacity:.92;z-index:30;position:relative;}
+  .entry.selected{outline:3px solid #2f8fef;outline-offset:-3px;position:relative;}
+  .entry-select-badge{
+    position:absolute;right:8px;bottom:6px;width:20px;height:20px;border-radius:50%;
+    background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .entry-select-badge svg{width:12px;height:12px;display:block;}
+  .trash-action-btn{background:none;border:none;color:inherit;opacity:.85;cursor:pointer;padding:6px;display:flex;flex-shrink:0;}
+  .trash-action-btn svg{width:18px;height:18px;display:block;}
+  .selection-topbar .topbar-right{gap:4px;}
+
+  /* ---------- Manage tabs screen ---------- */
+  #manageList.hidden{display:none;}
+  .manage-row{
+    display:flex;align-items:center;gap:14px;padding:10px 14px;
+    border-bottom:1px solid rgba(255,255,255,0.04);touch-action:pan-y;
+  }
+  .manage-row.dragging{box-shadow:0 6px 16px rgba(0,0,0,0.5);opacity:.92;z-index:30;position:relative;background:var(--bg);}
+  .manage-del{background:none;border:none;color:var(--text);cursor:pointer;padding:4px;flex-shrink:0;display:flex;}
+  .manage-del svg{width:17px;height:17px;}
+  .manage-dot{width:26px;height:26px;border-radius:50%;flex-shrink:0;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.15);}
+  .manage-name{flex:1;font-size:14.5px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;}
+  .manage-name-input{
+    flex:1;background:transparent;border:none;border-bottom:1px solid var(--accent);color:var(--text);
+    font-size:14.5px;font-weight:600;font-family:inherit;outline:none;padding:0 0 2px;min-width:0;
+  }
+  .manage-handle{color:var(--text-dim);cursor:grab;flex-shrink:0;padding:6px;touch-action:none;}
+  .manage-lock{background:none;border:none;color:var(--text-dim);cursor:pointer;padding:6px;flex-shrink:0;display:flex;}
+  .manage-lock.active{color:var(--accent);}
+  .manage-lock svg{width:17px;height:17px;display:block;}
+  .manage-handle svg{width:18px;height:18px;display:block;}
+
+  /* ---------- FAB ---------- */
+  .fab{
+    position:fixed;right:16px;bottom:20px;
+    width:48px;height:48px;border-radius:50%;
+    background:var(--accent);color:#1c1c1e;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 14px rgba(0,0,0,0.4);
+    border:none;cursor:pointer;z-index:20;
+  }
+  .fab svg{width:22px;height:22px;}
+
+  /* ---------- Bottom sheets / overlays ---------- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,0.55);
+    display:none;align-items:flex-end;justify-content:center;z-index:80;
+  }
+  .overlay.show{display:flex;}
+  .sheet{
+    background:var(--bg-elevated);width:100%;max-width:480px;
+    border-radius:14px 14px 0 0;padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+    animation:slideup .18s ease-out;max-height:80vh;overflow-y:auto;
+  }
+  @keyframes slideup{from{transform:translateY(24px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .sheet h3{margin:0 0 10px;font-size:15.5px;}
+  .sheet input, .sheet textarea, .sheet select{
+    width:100%;background:#161618;border:1px solid #3a3a3c;color:var(--text);
+    border-radius:7px;padding:9px 10px;font-size:13.5px;font-family:inherit;margin-bottom:9px;
+  }
+  .sheet textarea{min-height:70px;resize:vertical;}
+  .color-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+  .swatch{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;flex-shrink:0;}
+  .swatch.selected{border-color:#fff;}
+  .sheet-actions{display:flex;gap:8px;justify-content:flex-end;}
+  .btn{padding:8px 15px;border-radius:7px;border:none;font-size:13.5px;font-weight:600;cursor:pointer;}
+  .btn-cancel{background:transparent;color:var(--text-dim);}
+  .btn-save{background:var(--accent);color:#1c1c1e;}
+  .btn-danger{background:#8b2c2c;color:#fff;}
+  .field-row{display:flex;align-items:center;justify-content:space-between;padding:9px 2px;border-bottom:1px solid #3a3a3c;}
+  .field-row:last-of-type{border-bottom:none;}
+  .field-row label{color:var(--text-dim);font-size:13px;}
+  .field-row input[type=date], .field-row input[type=time], .field-row select{
+    width:auto;margin:0;background:transparent;border:none;color:var(--text);font-size:13.5px;text-align:right;
+  }
+  .backup-row{display:flex;align-items:center;justify-content:space-between;padding:9px 2px;border-bottom:1px solid #3a3a3c;gap:8px;}
+  .backup-row:last-child{border-bottom:none;}
+  .backup-row .backup-date{font-size:13px;flex:1;min-width:0;}
+  .backup-row .backup-actions{display:flex;gap:6px;flex-shrink:0;}
+  .backup-row button{background:none;border:none;color:var(--text-dim);cursor:pointer;padding:5px;display:flex;}
+  .backup-row button.restore{color:var(--accent);}
+  .backup-row button svg{width:16px;height:16px;display:block;}
+  .backup-empty{color:var(--text-dim);font-size:13px;padding:6px 2px;}
+
+  /* Move-to / label list sheet */
+  .label-item{display:flex;align-items:center;gap:11px;padding:10px 4px;cursor:pointer;border-radius:7px;}
+  .label-item:active{background:rgba(255,255,255,0.06);}
+  .label-item.active-label{background:rgba(255,255,255,0.1);}
+  .label-item .tag-ic{width:16px;height:16px;flex-shrink:0;color:var(--text-dim);}
+  .label-item.active-label .tag-ic{color:#fff;}
+  .label-item span{font-size:13.5px;}
+
+  /* Attachment sheet */
+  .attach-item{display:flex;align-items:center;gap:14px;padding:10px 4px;cursor:pointer;border-radius:7px;}
+  .attach-item:active{background:rgba(255,255,255,0.06);}
+  .attach-item svg{width:19px;height:19px;color:var(--text-dim);}
+  .attach-item span{font-size:13.5px;}
+
+  /* Overflow dropdown menu */
+  .dropdown-menu{
+    position:absolute;top:calc(100% + 4px);right:0;
+    background:var(--sheet-light);color:#1c1c1e;border-radius:9px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.4);min-width:160px;z-index:70;
+    display:none;overflow:hidden;
+  }
+  .dropdown-menu.show{display:block;}
+  .hamburger-wrap .dropdown-menu{left:0;right:auto;}
+  .dropdown-item{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 15px;font-size:13.5px;cursor:pointer;
+  }
+  .dropdown-item:active{background:rgba(0,0,0,0.08);}
+  .dropdown-item svg{width:16px;height:16px;}
+
+  /* ---------- Detail page ---------- */
+  #detailPage{background:#000;}
+  .detail-header{
+    display:flex;align-items:center;gap:6px;padding:8px 8px;background:var(--bg);flex-shrink:0;position:relative;
+  }
+  .detail-title{
+    flex:1;font-size:calc(15.5px * var(--fs-scale));font-weight:500;background:transparent;border:none;color:var(--text);
+    outline:none;min-width:0;
+  }
+  .detail-color-area{
+    flex:1;overflow-y:auto;padding:12px 14px 90px;
+    background-image:repeating-linear-gradient(to bottom, transparent, transparent 27px, rgba(255,255,255,0.12) 28px);
+  }
+  .detail-meta-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;opacity:.9;}
+  .detail-tabname{font-size:12.5px;font-weight:500;opacity:.85;}
+  .detail-created{display:flex;align-items:center;gap:5px;font-size:12.5px;opacity:.85;}
+  .detail-created svg{width:13px;height:13px;cursor:pointer;}
+  .detail-created svg.hidden{display:none;}
+  .detail-title.locked{opacity:.75;}
+
+  .detail-line{display:flex;align-items:flex-start;gap:8px;padding:3px 0;touch-action:pan-y;}
+  .detail-line.dragging{box-shadow:0 6px 16px rgba(0,0,0,0.5);opacity:.92;z-index:30;position:relative;}
+  .dl-handle{color:inherit;opacity:.5;cursor:grab;flex-shrink:0;padding:4px 2px;touch-action:none;margin-top:1px;}
+  .dl-handle svg{width:15px;height:15px;display:block;}
+  .dl-marker{width:21px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:calc(14.5px * var(--fs-scale));font-weight:700;padding-top:2px;opacity:.9;}
+  .ci-box{
+    width:21px;height:21px;flex-shrink:0;border-radius:5px;margin-top:1.5px;
+    border:2px solid currentColor;box-sizing:border-box;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:background .12s;
+  }
+  .ci-box.checked-box{background:rgba(127,127,127,0.55);border-color:rgba(127,127,127,0.8);}
+  .ci-box.locked{cursor:default;opacity:.6;}
+  .ci-box svg{width:13px;height:13px;display:block;}
+  .dl-text{flex:1;outline:none;font-size:calc(14.5px * var(--fs-scale));line-height:calc(24px * var(--fs-scale));word-break:break-word;white-space:pre-wrap;min-height:24px;}
+  .detail-line.done .dl-text{text-decoration:line-through;opacity:.55;}
+  .line-separator{height:1px;background:currentColor;opacity:.3;margin:8px 0;}
+  .ci-del{background:none;border:none;color:inherit;opacity:.55;cursor:pointer;padding:4px;flex-shrink:0;margin-top:-1px;}
+  .ci-del svg{width:14px;height:14px;display:block;}
+  .line-add-row{display:flex;align-items:center;gap:10px;padding:10px 0 4px;opacity:.6;cursor:pointer;}
+  .line-add-row svg{width:16px;height:16px;flex-shrink:0;}
+  .line-add-row span{font-size:14.5px;}
+
+  #attachmentsGallery{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+  .attach-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .attach-thumb{position:relative;border-radius:8px;overflow:hidden;background:rgba(0,0,0,0.15);aspect-ratio:1/1;}
+  .attach-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .attach-thumb .attach-del{
+    position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;
+    background:rgba(0,0,0,0.55);color:#fff;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;
+  }
+  .attach-thumb .attach-del svg{width:12px;height:12px;}
+  .attach-audio-row{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.15);border-radius:8px;padding:6px 8px;}
+  .attach-audio-row audio{flex:1;height:32px;}
+  .attach-audio-row .attach-del{
+    width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.35);color:inherit;border:none;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;
+  }
+  .attach-audio-row .attach-del svg{width:13px;height:13px;}
+  #imageLightbox{touch-action:none;}
+  #lightboxImg{touch-action:none;transition:transform .08s ease-out;user-select:none;-webkit-user-drag:none;}
+
+  .search-result{display:flex;align-items:center;justify-content:space-between;padding:11px 4px;cursor:pointer;border-bottom:1px solid #3a3a3c;}
+  .search-result:active{background:rgba(255,255,255,0.06);}
+  .search-result .sr-title{font-size:14px;font-weight:600;flex:1;padding-right:10px;}
+  .search-result .sr-tab{font-size:12px;color:var(--text-dim);flex-shrink:0;}
+  .search-empty{padding:14px 4px;color:var(--text-dim);font-size:13.5px;}
+  .detail-body{
+    font-size:14.5px;line-height:28px;outline:none;min-height:160px;white-space:pre-wrap;word-break:break-word;
+  }
+  .detail-body:empty:before{content:attr(data-placeholder);opacity:.6;}
+
+  .detail-toolbar{
+    position:absolute;left:0;right:0;bottom:0;
+    display:flex;align-items:center;gap:2px;
+    background:#1c1c1e;padding:6px 6px calc(6px + env(safe-area-inset-bottom));
+    flex-shrink:0;
+  }
+  .detail-toolbar .icon-btn{padding:8px;}
+  .detail-toolbar .icon-btn svg{width:18px;height:18px;}
+  .detail-toolbar .spacer{flex:1;}
+  .detail-toolbar .check-btn{color:#fff;}
+
+  .toast{
+    position:fixed;left:50%;bottom:90px;transform:translateX(-50%);
+    background:#333336;color:#fff;padding:8px 15px;border-radius:7px;font-size:12.5px;
+    z-index:100;opacity:0;pointer-events:none;transition:opacity .2s;
+  }
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ LIST PAGE ============ -->
+  <div class="page" id="listPage">
+    <header class="topbar" id="mainTopbar">
+      <div class="topbar-left">
+        <div class="hamburger-wrap" style="position:relative;">
+          <button class="icon-btn" id="hamburgerBtn" title="Meniu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="dropdown-menu" id="hamburgerMenu">
+            <div class="dropdown-item" data-view="notes">Toate notițele</div>
+            <div class="dropdown-item" data-view="archive">Arhivă</div>
+            <div class="dropdown-item" data-view="trash">Coș de gunoi</div>
+            <div class="dropdown-item" data-action="settings">Setări</div>
+          </div>
+        </div>
+        <div class="app-title" id="appTitle">My Notes</div>
+      </div>
+      <div class="topbar-right">
+        <button class="icon-btn" id="undoBtn" title="Anulează ultima acțiune" style="opacity:.35;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h10a5 5 0 0 1 0 10H8"/><path d="m3 10 5-5"/><path d="m3 10 5 5"/></svg>
+        </button>
+        <button class="icon-btn" id="newEntryTopBtn" title="Intrare nouă">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        </button>
+        <button class="icon-btn" id="searchTopBtn" title="Căutare">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <header class="topbar selection-topbar hidden" id="selectionToolbar">
+      <div class="topbar-left">
+        <button class="icon-btn" id="selectionBackBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+        </button>
+        <div class="app-title" id="selectionCount">1</div>
+      </div>
+      <div class="topbar-right">
+        <button class="icon-btn" id="selPaletteBtn" title="Culoare">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1.1-.2-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16c3.3 0 6-2.7 6-6 0-4.4-4.5-8-10-8Z"/></svg>
+        </button>
+        <button class="icon-btn" id="selMoveBtn" title="Mută în tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 12.6 12.7 20.5a2 2 0 0 1-2.8 0l-7.4-7.4a2 2 0 0 1 0-2.8L10.4 2.4H19a2 2 0 0 1 2 2v8.2Z"/><circle cx="14.5" cy="7.5" r="1.5"/></svg>
+        </button>
+        <button class="icon-btn" id="selPinBtn" title="Pin">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v7h1.6v-7H18v-2z"/></svg>
+        </button>
+        <button class="icon-btn" id="selDeleteBtn" title="Șterge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="tabs-wrap" id="tabsWrap">
+      <div class="tabs" id="tabsRow"></div>
+    </div>
+
+    <div class="body-scroll" id="bodyScroll">
+      <div class="section-label" id="sectionLabel">Fixate</div>
+      <div id="entriesList"></div>
+      <div id="manageList" class="hidden"></div>
+    </div>
+
+    <button class="fab" id="fabAdd" title="Adaugă intrare">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </div>
+
+  <!-- ============ DETAIL PAGE ============ -->
+  <div class="page hidden" id="detailPage">
+    <div class="detail-header">
+      <button class="icon-btn" id="detailBackBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <input class="detail-title" id="detailTitleInput" readonly>
+      <button class="icon-btn" id="detailUndoBtn" title="Anulează ultima acțiune" style="opacity:.35;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h10a5 5 0 0 1 0 10H8"/><path d="m3 10 5-5"/><path d="m3 10 5 5"/></svg>
+      </button>
+      <button class="icon-btn" id="detailEditBtn" title="Editează titlul">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      </button>
+      <button class="icon-btn" id="detailMenuBtn" title="Mai multe">
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+      </button>
+
+      <div class="dropdown-menu" id="overflowMenu">
+        <div class="dropdown-item" data-action="pin"><span id="pinMenuLabel">Unpin</span></div>
+        <div class="dropdown-item" data-action="check"><span id="checkMenuLabel">Check</span></div>
+        <div class="dropdown-item" data-action="lock"><span id="lockMenuLabel">Lock</span></div>
+        <div class="dropdown-item" data-action="stick"><span id="stickMenuLabel">Stick</span></div>
+        <div class="dropdown-item" data-action="share">Share</div>
+        <div class="dropdown-item" data-action="duplicate">Duplicate</div>
+        <div class="dropdown-item" data-action="checkboxes">Checkboxes</div>
+        <div class="dropdown-item" data-action="bullets">Bullets</div>
+        <div class="dropdown-item" data-action="numbered">Numbered list</div>
+        <div class="dropdown-item" data-action="search">Search</div>
+        <div class="dropdown-item" data-action="archive"><span id="archiveMenuLabel">Archive</span></div>
+        <div class="dropdown-item" data-action="delete">Delete</div>
+        <div class="dropdown-item" data-action="cancel">Cancel</div>
+      </div>
+    </div>
+
+    <div class="detail-color-area" id="detailColorArea">
+      <div class="detail-meta-row">
+        <div class="detail-tabname" id="detailTabName">Trading</div>
+        <div class="detail-created">
+          <svg id="detailLockIcon" class="hidden" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          <svg id="detailStickyIcon" class="hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 9 9l-6 1 4.5 4.5L6 21l6-3.5L18 21l-1.5-6.5L21 10l-6-1-3-7z"/></svg>
+          <svg id="detailCheckIcon" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          <svg id="detailPinIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v7h1.6v-7H18v-2z"/></svg>
+          <span id="detailCreatedLabel">Created 13 Sep</span>
+        </div>
+      </div>
+      <div id="detailLines"></div>
+      <div class="line-add-row" id="lineAddRow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>Adaugă o linie</span>
+      </div>
+      <div id="attachmentsGallery"></div>
+    </div>
+
+    <div class="detail-toolbar">
+      <button class="icon-btn" id="toolPaletteBtn" title="Culoare">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1.1-.2-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16c3.3 0 6-2.7 6-6 0-4.4-4.5-8-10-8Z"/></svg>
+      </button>
+      <button class="icon-btn" id="toolLabelBtn" title="Mută în tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 12.6 12.7 20.5a2 2 0 0 1-2.8 0l-7.4-7.4a2 2 0 0 1 0-2.8L10.4 2.4H19a2 2 0 0 1 2 2v8.2Z"/><circle cx="14.5" cy="7.5" r="1.5"/></svg>
+      </button>
+      <button class="icon-btn" id="toolAlarmBtn" title="Reminder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/><path d="M5 3 3 5"/><path d="m19 3 2 2"/></svg>
+      </button>
+      <button class="icon-btn" id="toolAttachBtn" title="Atașament">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+      </button>
+      <div class="spacer"></div>
+      <button class="icon-btn check-btn" id="toolCheckBtn" title="Salvează">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- New entry sheet -->
+<div class="overlay" id="entryOverlay">
+  <div class="sheet">
+    <h3>Intrare nouă</h3>
+    <input type="text" id="newEntryTitleInput" placeholder="Titlul intrării...">
+    <div class="color-row" id="colorRow"></div>
+    <div class="sheet-actions">
+      <button class="btn btn-cancel" id="cancelEntryBtn">Anulează</button>
+      <button class="btn btn-save" id="saveEntryBtn">Salvează</button>
+    </div>
+  </div>
+</div>
+
+<!-- New tab sheet -->
+<div class="overlay" id="tabOverlay">
+  <div class="sheet">
+    <h3>Tab nou</h3>
+    <input type="text" id="tabNameInput" placeholder="Nume tab (ex: Trading)">
+    <div class="sheet-actions">
+      <button class="btn btn-cancel" id="cancelTabBtn">Anulează</button>
+      <button class="btn btn-save" id="saveTabBtn">Adaugă</button>
+    </div>
+  </div>
+</div>
+
+<!-- Color picker sheet (for detail view) -->
+<div class="overlay" id="colorOverlay">
+  <div class="sheet">
+    <h3>Alege culoarea</h3>
+    <div class="color-row" id="detailColorRow"></div>
+    <div class="sheet-actions">
+      <button class="btn btn-cancel" id="cancelColorBtn">Închide</button>
+    </div>
+  </div>
+</div>
+
+<!-- Search sheet -->
+<div class="overlay" id="searchOverlay">
+  <div class="sheet">
+    <h3>Search</h3>
+    <input type="text" id="searchInput" placeholder="Caută după titlu...">
+    <div id="searchResults"></div>
+    <div class="sheet-actions">
+      <button class="btn btn-cancel" id="cancelSearchBtn">Închide</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tab color picker sheet -->
+<div class="overlay" id="tabColorOverlay">
+  <div class="sheet">
+    <h3>Culoarea tabului</h3>
+    <div class="color-row" id="tabColorRow"></div>
+    <div class="sheet-actions">
+      <button class="btn btn-cancel" id="cancelTabColorBtn">Închide</button>
+    </div>
+  </div>
+</div>
+
+<!-- Move to (labels) sheet -->
+<div class="overlay" id="moveOverlay">
+  <div class="sheet">
+    <h3>Move to</h3>
+    <div id="moveList"></div>
+  </div>
+</div>
+
+<!-- Add reminder modal -->
+<div class="overlay" id="reminderOverlay">
+  <div class="sheet">
+    <h3>Add reminder</h3>
+    <div class="field-row">
+      <label>Data</label>
+      <input type="date" id="reminderDate">
+    </div>
+    <div class="field-row">
+      <label>Ora</label>
+      <input type="time" id="reminderTime">
+    </div>
+    <div class="field-row">
+      <label>Repetare</label>
+      <select id="reminderRepeat">
+        <option>Does not repeat</option>
+        <option>Daily</option>
+        <option>Weekly</option>
+        <option>Monthly</option>
+        <option>Yearly</option>
+      </select>
+    </div>
+    <div class="sheet-actions" style="margin-top:14px;">
+      <button class="btn btn-danger" id="removeReminderBtn" style="display:none;margin-right:auto;">Șterge</button>
+      <button class="btn btn-cancel" id="cancelReminderBtn">Cancel</button>
+      <button class="btn btn-save" id="saveReminderBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings sheet -->
+<div class="overlay" id="settingsOverlay">
+  <div class="sheet">
+    <h3>Setări</h3>
+    <div class="field-row">
+      <label>Notițele noi sunt fixate implicit</label>
+      <input type="checkbox" id="settingPinnedDefault" style="width:20px;height:20px;">
+    </div>
+    <div class="field-row" style="cursor:pointer;" id="pinManageRow">
+      <label>Cod PIN (blocare notițe/taburi)</label>
+      <span id="pinStatusLabel" style="color:var(--text-dim);font-size:13px;">Nesetat</span>
+    </div>
+    <div class="field-row">
+      <label>Sunet reminder</label>
+      <select id="settingAlarmSound" style="width:auto;">
+        <option value="chime">Clopoțel</option>
+        <option value="beep">Beep</option>
+        <option value="bell">Sonerie</option>
+      </select>
+    </div>
+    <div class="field-row" style="flex-direction:column;align-items:stretch;gap:6px;">
+      <div style="display:flex;justify-content:space-between;"><label>Volum reminder</label><span id="volumeValueLabel" style="color:var(--text-dim);font-size:13px;">70%</span></div>
+      <input type="range" id="settingAlarmVolume" min="0" max="100" value="70" style="width:100%;">
+      <button class="btn btn-cancel" id="testAlarmSoundBtn" style="align-self:flex-start;padding:6px 10px;">Testează sunetul</button>
+    </div>
+    <div class="field-row">
+      <label>Mărime text</label>
+      <select id="settingTextScale" style="width:auto;">
+        <option value="0.85">Mic</option>
+        <option value="1">Normal</option>
+        <option value="1.15">Mare</option>
+        <option value="1.3">Foarte mare</option>
+      </select>
+    </div>
+    <div class="field-row" style="cursor:pointer;" id="emptyTrashRow">
+      <label style="color:#e05c5c;">Golește coșul de gunoi</label>
+      <span id="trashCountLabel" style="color:var(--text-dim);font-size:13px;">0 elemente</span>
+    </div>
+    <div style="margin-top:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <label style="font-weight:600;font-size:14px;">Backup local</label>
+        <button class="btn btn-save" id="createBackupBtn" style="padding:6px 12px;">Creează backup</button>
+      </div>
+      <div id="backupList"></div>
+    </div>
+    <div class="field-row" style="margin-top:8px;">
+      <label style="color:var(--text-dim);">Versiune mockup</label>
+      <span style="color:var(--text-dim);font-size:13px;">WeNote — demo 1.0</span>
+    </div>
+    <div class="sheet-actions" style="margin-top:14px;">
+      <button class="btn btn-save" id="closeSettingsBtn">Închide</button>
+    </div>
+  </div>
+</div>
+
+<!-- PIN setup sheet -->
+<div class="overlay" id="pinSetupOverlay">
+  <div class="sheet">
+    <h3>Setează cod PIN</h3>
+    <input type="password" inputmode="numeric" maxlength="4" id="pinSetupInput" placeholder="4 cifre">
+    <input type="password" inputmode="numeric" maxlength="4" id="pinSetupConfirm" placeholder="Confirmă codul">
+    <div id="pinSetupError" style="color:#e05c5c;font-size:13px;margin:-4px 0 10px;display:none;">Codurile nu coincid sau nu au 4 cifre.</div>
+    <div class="sheet-actions">
+      <button class="btn btn-cancel" id="pinSetupCancelBtn">Anulează</button>
+      <button class="btn btn-save" id="pinSetupSaveBtn">Salvează</button>
+    </div>
+  </div>
+</div>
+
+<!-- PIN prompt sheet -->
+<div class="overlay" id="pinPromptOverlay">
+  <div class="sheet">
+    <h3 id="pinPromptTitle">Introdu codul PIN</h3>
+    <input type="password" inputmode="numeric" maxlength="4" id="pinPromptInput" placeholder="4 cifre">
+    <div id="pinPromptError" style="color:#e05c5c;font-size:13px;margin:-4px 0 10px;display:none;">Cod greșit.</div>
+    <div class="sheet-actions">
+      <button class="btn btn-cancel" id="pinPromptCancelBtn">Anulează</button>
+      <button class="btn btn-save" id="pinPromptOkBtn">Deblochează</button>
+    </div>
+  </div>
+</div>
+
+<!-- Attachment sheet -->
+<div class="overlay" id="attachOverlay">
+  <div class="sheet">
+    <div class="attach-item" data-name="Choose image">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+      <span>Choose image</span>
+    </div>
+    <div class="attach-item" data-name="Take photo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3Z"/><circle cx="12" cy="13" r="3.5"/></svg>
+      <span>Take photo</span>
+    </div>
+    <div class="attach-item" data-name="Drawing">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5Z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+      <span>Drawing</span>
+    </div>
+    <div class="attach-item" data-name="Recording">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg>
+      <span>Recording</span>
+    </div>
+    <div class="sheet-actions" style="margin-top:8px;">
+      <button class="btn btn-cancel" id="cancelAttachBtn">Anulează</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="imageFileInput" accept="image/*" multiple style="display:none;">
+<input type="file" id="cameraFileInput" accept="image/*" capture="environment" style="display:none;">
+
+<!-- Drawing overlay -->
+<div class="overlay" id="drawOverlay">
+  <div class="sheet" style="padding:14px 14px 16px;">
+    <h3 style="margin-bottom:10px;">Desen</h3>
+    <canvas id="drawCanvas" style="width:100%;height:300px;background:#fff;border-radius:10px;touch-action:none;display:block;"></canvas>
+    <div class="color-row" id="drawColorRow" style="margin-top:12px;"></div>
+    <div class="sheet-actions" style="margin-top:8px;">
+      <button class="btn btn-cancel" id="drawClearBtn">Șterge tot</button>
+      <button class="btn btn-cancel" id="drawCancelBtn">Anulează</button>
+      <button class="btn btn-save" id="drawSaveBtn">Salvează</button>
+    </div>
+  </div>
+</div>
+
+<!-- Fullscreen image viewer -->
+<div class="overlay" id="imageLightbox" style="background:rgba(0,0,0,0.92);align-items:center;">
+  <button id="lightboxCloseBtn" style="position:absolute;top:16px;right:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);border:none;color:#fff;display:flex;align-items:center;justify-content:center;z-index:2;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <img id="lightboxImg" src="" style="max-width:94vw;max-height:88vh;object-fit:contain;border-radius:6px;">
+</div>
+
+<!-- Recording overlay -->
+<div class="overlay" id="recordOverlay">
+  <div class="sheet" style="text-align:center;">
+    <h3 style="margin-bottom:12px;">Înregistrare audio</h3>
+    <div id="recordStatus" style="font-size:14px;color:var(--text-dim);margin-bottom:16px;">Apasă butonul pentru a începe</div>
+    <button id="recordToggleBtn" style="width:66px;height:66px;border-radius:50%;background:#8b2c2c;border:none;color:#fff;font-size:22px;cursor:pointer;">⏺</button>
+    <div id="recordTimer" style="margin-top:10px;font-size:13px;color:var(--text-dim);">00:00</div>
+    <div class="sheet-actions" style="margin-top:18px;justify-content:center;">
+      <button class="btn btn-cancel" id="recordCancelBtn">Anulează</button>
+      <button class="btn btn-save" id="recordSaveBtn" style="display:none;">Salvează</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const COLORS = [
+    {id:'default', bg:'#000000', text:'#ffffff'},
+    {id:'red',     bg:'#7a2222', text:'#ffffff'},
+    {id:'pink',    bg:'#c2185b', text:'#ffffff'},
+    {id:'green',   bg:'#12604f', text:'#ffffff'},
+    {id:'purple',  bg:'#6a3fa0', text:'#ffffff'},
+    {id:'yellow',  bg:'#e8c22a', text:'#1c1c1e'},
+    {id:'gray',    bg:'#5c5c5e', text:'#ffffff'},
+    {id:'blue',    bg:'#1f5fa8', text:'#ffffff'},
+    {id:'orange',  bg:'#c1631a', text:'#ffffff'},
+    {id:'teal',    bg:'#187a72', text:'#ffffff'},
+    {id:'indigo',  bg:'#3949ab', text:'#ffffff'},
+    {id:'brown',   bg:'#5d4037', text:'#ffffff'},
+    {id:'lime',    bg:'#a7c623', text:'#1c1c1e'},
+    {id:'rose',    bg:'#e07a9e', text:'#1c1c1e'},
+    {id:'navy',    bg:'#16324f', text:'#ffffff'},
+    {id:'white',   bg:'#f2f2f2', text:'#1c1c1e'},
+  ];
+
+  const TAB_COLORS = ['#f4c430','#2c4a6e','#ffffff','#34d058','#1b5e20','#7be495','#f28c00','#f4a13a','#8e3fd6','#5b8def','#e05c5c','#4dd0c8','#a7c623','#c2185b','#5d4037','#16324f'];
+  const GEAR_ID = '__manage__';
+
+  const STORAGE_KEY = 'wenote-mockup-data-v3';
+
+  function cryptoId(){ return 'e' + Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+
+  const MONTHS = ['Ian','Feb','Mar','Apr','Mai','Iun','Iul','Aug','Sep','Oct','Noi','Dec'];
+  function todayLabel(){ const d=new Date(); return d.getDate()+' '+MONTHS[d.getMonth()]; }
+
+  function defaultData(){
+    return {
+      activeTab: 'trading',
+      settings: { pinnedDefault: true, pin: null, alarmSound: 'chime', alarmVolume: 0.7, textScale: 1 },
+      tabs: [
+        {id:'lucru', name:'In lucru', color:'#ffffff'},
+        {id:'health', name:'Health', color:'#34d058'},
+        {id:'trading', name:'Trading', color:'#1b5e20'},
+        {id:'quant', name:'LuxAlgo - Quant', color:'#f4c430'},
+        {id:'apps', name:'Aplicații 📱', color:'#7be495'},
+      ],
+      entries: [
+        {id:cryptoId(), tabId:'trading', title:'Chat GPT - Astra', body:'Construiește indicatorul, testează-l, identifică erorile, corectează-l și verifică rezultatul.”\n\nOpenAI spune că Astra este disponibil în prezent în ChatGPT Work, Codex și API', color:'pink', date:'13 Sep', pinned:true, reminder:null},
+        {id:cryptoId(), tabId:'trading', title:'Ciubi - Liquidity Swept 1H & 4H - Claude', body:'', color:'blue', date:'27 Aug', pinned:true, reminder:null},
+        {id:cryptoId(), tabId:'trading', title:'Prompt - Ciubi - Liquidity swept for 1H & 4H', body:'', color:'blue', date:'27 Aug', pinned:true, reminder:null},
+        {id:cryptoId(), tabId:'trading', title:'1H și 4H - external sweep pe ambele părți', body:'', color:'blue', date:'27 Aug', pinned:true, reminder:null},
+        {id:cryptoId(), tabId:'trading', title:'Candle weakening with smaller candles or NOT?', body:'', color:'blue', date:'27 Aug', pinned:true, reminder:null},
+        {id:cryptoId(), tabId:'trading', title:'Liquidity sweep or not', body:'', color:'gray', date:'16 Aug', pinned:true, reminder:null},
+        {id:cryptoId(), tabId:'trading', title:'0. Mark Day Type - correctly !!', body:'', color:'default', date:'15 Apr', pinned:true, reminder:null},
+        {id:cryptoId(), tabId:'trading', title:'1. BIAS Alignment 4H structure + 4H EMA+ 5m', body:'', color:'default', date:'15 Apr', pinned:true, reminder:null},
+        {id:cryptoId(), tabId:'trading', title:'2. SWEEP LIQUIDITY', body:'', color:'default', date:'15 Apr', pinned:true, reminder:null},
+        {id:cryptoId(), tabId:'trading', title:'3. REACTION TO PDH & PDL', body:'', color:'default', date:'15 Apr', pinned:true, reminder:null},
+      ]
+    };
+  }
+
+  let data = null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    data = raw ? JSON.parse(raw) : defaultData();
+  } catch(e){ data = defaultData(); }
+  if(!data || !data.tabs || !data.tabs.length){ data = defaultData(); }
+  if(!data.settings) data.settings = {};
+  if(typeof data.settings.pinnedDefault === 'undefined') data.settings.pinnedDefault = true;
+  if(typeof data.settings.pin === 'undefined') data.settings.pin = null;
+  if(typeof data.settings.alarmSound === 'undefined') data.settings.alarmSound = 'chime';
+  if(typeof data.settings.alarmVolume === 'undefined') data.settings.alarmVolume = 0.7;
+  if(typeof data.settings.textScale === 'undefined') data.settings.textScale = 1;
+  document.documentElement.style.setProperty('--fs-scale', data.settings.textScale);
+  if(data.tabs) data.tabs.forEach(t=>{ if(typeof t.locked === 'undefined') t.locked = false; });
+  if(data.entries) data.entries.forEach(e=>{
+    if(typeof e.trashed === 'undefined') e.trashed = false;
+    migrateEntryToLines(e);
+  });
+
+  function persist(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }catch(e){} }
+  function colorOf(id){ return COLORS.find(c=>c.id===id) || COLORS[0]; }
+
+  // ---------- DOM refs ----------
+  const listPage = document.getElementById('listPage');
+  const detailPage = document.getElementById('detailPage');
+  const tabsRow = document.getElementById('tabsRow');
+  const entriesList = document.getElementById('entriesList');
+  const manageList = document.getElementById('manageList');
+  const sectionLabel = document.getElementById('sectionLabel');
+  const bodyScroll = document.getElementById('bodyScroll');
+  const fabAdd = document.getElementById('fabAdd');
+
+  const tabColorOverlay = document.getElementById('tabColorOverlay');
+  const tabColorRow = document.getElementById('tabColorRow');
+
+  const hamburgerMenu = document.getElementById('hamburgerMenu');
+  const tabsWrap = document.getElementById('tabsWrap');
+  const appTitle = document.getElementById('appTitle');
+  const mainTopbar = document.getElementById('mainTopbar');
+  const undoBtn = document.getElementById('undoBtn');
+  const detailUndoBtn = document.getElementById('detailUndoBtn');
+  const selectionToolbar = document.getElementById('selectionToolbar');
+
+  const searchOverlay = document.getElementById('searchOverlay');
+  const searchInput = document.getElementById('searchInput');
+  const searchResults = document.getElementById('searchResults');
+
+  const detailLockIcon = document.getElementById('detailLockIcon');
+  const detailStickyIcon = document.getElementById('detailStickyIcon');
+  const detailCheckIcon = document.getElementById('detailCheckIcon');
+  const checkMenuLabel = document.getElementById('checkMenuLabel');
+  const lockMenuLabel = document.getElementById('lockMenuLabel');
+  const stickMenuLabel = document.getElementById('stickMenuLabel');
+  const archiveMenuLabel = document.getElementById('archiveMenuLabel');
+  const detailLinesEl = document.getElementById('detailLines');
+  const lineAddRow = document.getElementById('lineAddRow');
+
+  let viewMode = 'notes'; // 'notes' | 'archive' | 'trash'
+
+  // ---------- Undo (session-only, resets on reload) ----------
+  const UNDO_LIMIT = 50;
+  let undoStack = [];
+  function vibrate(pattern){
+    if(navigator.vibrate){ try{ navigator.vibrate(pattern); }catch(e){} }
+  }
+
+  function pushUndo(){
+    try{
+      undoStack.push(JSON.stringify(data));
+      if(undoStack.length > UNDO_LIMIT) undoStack.shift();
+    }catch(e){}
+    updateUndoButton();
+  }
+  function performUndo(){
+    if(!undoStack.length){ toast('Nimic de anulat'); return; }
+    vibrate(14);
+    const prev = undoStack.pop();
+    try{ data = JSON.parse(prev); }catch(e){ return; }
+    if(selectionMode){ selectionMode=false; selectedIds=new Set(); mainTopbar.classList.remove('hidden'); selectionToolbar.classList.add('hidden'); }
+    if(!data.tabs.some(t=>t.id===data.activeTab) && data.activeTab!==GEAR_ID){
+      data.activeTab = data.tabs.length ? data.tabs[0].id : GEAR_ID;
+    }
+    persist();
+    renderTabs();
+    renderBody();
+    if(!detailPage.classList.contains('hidden') && openEntryId){
+      const stillExists = findEntry(openEntryId);
+      if(stillExists){ openDetail(openEntryId); } else { closeDetail(); }
+    }
+    updateUndoButton();
+    toast('Anulat');
+  }
+  function updateUndoButton(){
+    if(undoBtn) undoBtn.style.opacity = undoStack.length ? '1' : '.35';
+    if(detailUndoBtn) detailUndoBtn.style.opacity = undoStack.length ? '1' : '.35';
+  }
+
+  // ---------- PIN protection (used for note lock & tab lock) ----------
+  const pinSetupOverlay = document.getElementById('pinSetupOverlay');
+  const pinSetupInput = document.getElementById('pinSetupInput');
+  const pinSetupConfirm = document.getElementById('pinSetupConfirm');
+  const pinSetupError = document.getElementById('pinSetupError');
+  const pinPromptOverlay = document.getElementById('pinPromptOverlay');
+  const pinPromptInput = document.getElementById('pinPromptInput');
+  const pinPromptError = document.getElementById('pinPromptError');
+  const pinPromptTitle = document.getElementById('pinPromptTitle');
+  let pinSetupCallback = null;
+  let pinPromptCallback = null;
+  let pinPromptCancelCallback = null;
+
+  function openPinSetup(onSuccess){
+    pinSetupCallback = onSuccess;
+    pinSetupInput.value = '';
+    pinSetupConfirm.value = '';
+    pinSetupError.style.display = 'none';
+    pinSetupOverlay.classList.add('show');
+    setTimeout(()=>pinSetupInput.focus(), 60);
+  }
+  document.getElementById('pinSetupCancelBtn').addEventListener('click', ()=> pinSetupOverlay.classList.remove('show'));
+  pinSetupOverlay.addEventListener('click', (e)=>{ if(e.target===pinSetupOverlay) pinSetupOverlay.classList.remove('show'); });
+  document.getElementById('pinSetupSaveBtn').addEventListener('click', ()=>{
+    const a = pinSetupInput.value.trim(), b = pinSetupConfirm.value.trim();
+    if(!/^\d{4}$/.test(a) || a !== b){ pinSetupError.style.display = 'block'; return; }
+    data.settings.pin = a;
+    persist();
+    pinSetupOverlay.classList.remove('show');
+    toast('Cod PIN salvat');
+    if(pinSetupCallback){ const cb = pinSetupCallback; pinSetupCallback = null; cb(); }
+  });
+
+  let pinFailCount = 0;
+  let pinLockoutUntil = 0;
+  let pinLockoutInterval = null;
+  const PIN_MAX_ATTEMPTS = 5;
+  const PIN_LOCKOUT_MS = 30000;
+
+  function updatePinLockoutUI(){
+    const remaining = pinLockoutUntil - Date.now();
+    if(remaining > 0){
+      pinPromptError.style.display = 'block';
+      pinPromptError.style.color = '#e05c5c';
+      pinPromptError.textContent = 'Prea multe încercări greșite. Încearcă din nou peste ' + Math.ceil(remaining/1000) + 's.';
+      pinPromptInput.disabled = true;
+      document.getElementById('pinPromptOkBtn').style.opacity = '.45';
+      document.getElementById('pinPromptOkBtn').style.pointerEvents = 'none';
+    } else {
+      clearInterval(pinLockoutInterval);
+      pinPromptInput.disabled = false;
+      document.getElementById('pinPromptOkBtn').style.opacity = '1';
+      document.getElementById('pinPromptOkBtn').style.pointerEvents = 'auto';
+      pinPromptError.style.display = 'none';
+      pinFailCount = 0;
+    }
+  }
+
+  function openPinPrompt(title, onSuccess, onCancel){
+    pinPromptTitle.textContent = title || 'Introdu codul PIN';
+    pinPromptInput.value = '';
+    pinPromptError.style.display = 'none';
+    pinPromptError.style.color = '#e05c5c';
+    pinPromptError.textContent = 'Cod greșit.';
+    pinPromptCallback = onSuccess;
+    pinPromptCancelCallback = onCancel || null;
+    pinPromptOverlay.classList.add('show');
+    if(Date.now() < pinLockoutUntil){
+      clearInterval(pinLockoutInterval);
+      updatePinLockoutUI();
+      pinLockoutInterval = setInterval(updatePinLockoutUI, 500);
+    } else {
+      pinPromptInput.disabled = false;
+      document.getElementById('pinPromptOkBtn').style.opacity = '1';
+      document.getElementById('pinPromptOkBtn').style.pointerEvents = 'auto';
+    }
+    setTimeout(()=>pinPromptInput.focus(), 60);
+  }
+  document.getElementById('pinPromptCancelBtn').addEventListener('click', ()=>{
+    pinPromptOverlay.classList.remove('show');
+    clearInterval(pinLockoutInterval);
+    if(pinPromptCancelCallback){ const cb = pinPromptCancelCallback; pinPromptCancelCallback = null; cb(); }
+  });
+  pinPromptOverlay.addEventListener('click', (e)=>{ if(e.target===pinPromptOverlay){ document.getElementById('pinPromptCancelBtn').click(); }});
+  document.getElementById('pinPromptOkBtn').addEventListener('click', ()=>{
+    if(Date.now() < pinLockoutUntil) return;
+    if(pinPromptInput.value.trim() === data.settings.pin){
+      pinFailCount = 0;
+      vibrate(14);
+      pinPromptOverlay.classList.remove('show');
+      clearInterval(pinLockoutInterval);
+      if(pinPromptCallback){ const cb = pinPromptCallback; pinPromptCallback = null; cb(); }
+    } else {
+      pinFailCount++;
+      vibrate([12,40,12,40,12]);
+      if(pinFailCount >= PIN_MAX_ATTEMPTS){
+        pinLockoutUntil = Date.now() + PIN_LOCKOUT_MS;
+        clearInterval(pinLockoutInterval);
+        updatePinLockoutUI();
+        pinLockoutInterval = setInterval(updatePinLockoutUI, 500);
+      } else {
+        pinPromptError.style.display = 'block';
+        pinPromptError.textContent = 'Cod greșit. (' + (PIN_MAX_ATTEMPTS - pinFailCount) + ' încercări rămase)';
+      }
+    }
+  });
+  pinPromptInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') document.getElementById('pinPromptOkBtn').click(); });
+
+  const entryOverlay = document.getElementById('entryOverlay');
+  const newEntryTitleInput = document.getElementById('newEntryTitleInput');
+  const colorRow = document.getElementById('colorRow');
+
+  const tabOverlay = document.getElementById('tabOverlay');
+  const tabNameInput = document.getElementById('tabNameInput');
+
+  const colorOverlay = document.getElementById('colorOverlay');
+  const detailColorRow = document.getElementById('detailColorRow');
+
+  const moveOverlay = document.getElementById('moveOverlay');
+  const moveList = document.getElementById('moveList');
+
+  const reminderOverlay = document.getElementById('reminderOverlay');
+  const reminderDate = document.getElementById('reminderDate');
+  const reminderTime = document.getElementById('reminderTime');
+  const reminderRepeat = document.getElementById('reminderRepeat');
+  const removeReminderBtn = document.getElementById('removeReminderBtn');
+
+  const attachOverlay = document.getElementById('attachOverlay');
+
+  const detailTitleInput = document.getElementById('detailTitleInput');
+  const detailTabName = document.getElementById('detailTabName');
+  const detailCreatedLabel = document.getElementById('detailCreatedLabel');
+  const detailPinIcon = document.getElementById('detailPinIcon');
+  const detailColorArea = document.getElementById('detailColorArea');
+  const overflowMenu = document.getElementById('overflowMenu');
+  const pinMenuLabel = document.getElementById('pinMenuLabel');
+
+  const toastEl = document.getElementById('toast');
+  let toastTimer = null;
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 1600);
+  }
+
+  let selectedColor = 'default';
+  let openEntryId = null;
+  let focusedLineId = null;
+
+  // ---------- List rendering ----------
+  function renderTabs(){
+    tabsRow.innerHTML = '';
+    data.tabs.forEach(tab=>{
+      const el = document.createElement('div');
+      el.className = 'tab' + (tab.id===data.activeTab ? ' active':'');
+      el.textContent = tab.name;
+      el.dataset.tabId = tab.id;
+      el.addEventListener('click', ()=> switchTab(tab.id));
+      tabsRow.appendChild(el);
+    });
+    const gearTab = document.createElement('div');
+    gearTab.className = 'tab gear-tab' + (data.activeTab===GEAR_ID ? ' active':'');
+    gearTab.title = 'Editează taburile';
+    gearTab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>';
+    gearTab.addEventListener('click', ()=> switchTab(GEAR_ID));
+    tabsRow.appendChild(gearTab);
+    const addTab = document.createElement('div');
+    addTab.className = 'tab add-tab';
+    addTab.textContent = '+ Tab';
+    addTab.addEventListener('click', ()=>{
+      tabNameInput.value = '';
+      tabOverlay.classList.add('show');
+      setTimeout(()=>tabNameInput.focus(), 50);
+    });
+    tabsRow.appendChild(addTab);
+    const activeEl = tabsRow.querySelector('.tab.active');
+    if(activeEl) activeEl.scrollIntoView({inline:'center', block:'nearest', behavior:'smooth'});
+  }
+
+  function navOrder(){ return data.tabs.map(t=>t.id).concat([GEAR_ID]); }
+  function tabIndex(id){ return navOrder().indexOf(id); }
+
+  let unlockedTabIds = new Set();
+
+  function switchTab(tabId){
+    if(data.activeTab === tabId) return;
+    const targetTab = data.tabs.find(t=>t.id===tabId);
+    if(targetTab && targetTab.locked && !unlockedTabIds.has(tabId)){
+      openPinPrompt('Tab blocat — introdu codul PIN', ()=>{
+        unlockedTabIds.add(tabId);
+        doSwitchTab(tabId);
+      });
+      return;
+    }
+    doSwitchTab(tabId);
+  }
+
+  function doSwitchTab(tabId){
+    if(selectionMode){ selectionMode=false; selectedIds=new Set(); mainTopbar.classList.remove('hidden'); selectionToolbar.classList.add('hidden'); }
+    data.activeTab = tabId;
+    persist();
+    renderTabs();
+    renderBody();
+  }
+
+  function setViewMode(mode){
+    viewMode = mode;
+    hamburgerMenu.classList.remove('show');
+    if(selectionMode){ selectionMode=false; selectedIds=new Set(); mainTopbar.classList.remove('hidden'); selectionToolbar.classList.add('hidden'); }
+    if(mode === 'archive'){
+      tabsWrap.classList.add('hidden');
+      fabAdd.classList.add('hidden');
+      appTitle.textContent = 'Arhivă';
+    } else if(mode === 'trash'){
+      tabsWrap.classList.add('hidden');
+      fabAdd.classList.add('hidden');
+      appTitle.textContent = 'Coș de gunoi';
+    } else {
+      tabsWrap.classList.remove('hidden');
+      fabAdd.classList.remove('hidden');
+      appTitle.textContent = 'My Notes';
+    }
+    renderBody();
+  }
+
+  function renderBody(){
+    if(viewMode === 'archive'){
+      sectionLabel.classList.add('hidden');
+      manageList.classList.add('hidden');
+      entriesList.classList.remove('hidden');
+      renderArchive();
+      return;
+    }
+    if(viewMode === 'trash'){
+      sectionLabel.classList.add('hidden');
+      manageList.classList.add('hidden');
+      entriesList.classList.remove('hidden');
+      renderTrash();
+      return;
+    }
+    if(data.activeTab === GEAR_ID){
+      sectionLabel.classList.add('hidden');
+      entriesList.classList.add('hidden');
+      manageList.classList.remove('hidden');
+      fabAdd.title = 'Tab nou';
+      renderManageTabs();
+    } else {
+      sectionLabel.classList.remove('hidden');
+      entriesList.classList.remove('hidden');
+      manageList.classList.add('hidden');
+      fabAdd.title = 'Adaugă intrare';
+      renderEntries();
+    }
+  }
+
+  function renderArchive(){
+    const list = data.entries.filter(e=>e.archived && !e.trashed);
+    entriesList.innerHTML = '';
+    if(!list.length){
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = 'Nicio notiță arhivată.';
+      entriesList.appendChild(empty);
+      return;
+    }
+    list.forEach(entry=>{
+      const c = colorOf(entry.color);
+      const row = document.createElement('div');
+      row.className = 'entry';
+      row.dataset.id = entry.id;
+      row.style.background = c.bg;
+      row.style.color = c.text;
+      const textEl = document.createElement('div');
+      textEl.className = 'entry-text';
+      textEl.textContent = entry.title;
+      const rightEl = document.createElement('div');
+      rightEl.className = 'entry-right';
+      const tabTag = document.createElement('div');
+      tabTag.className = 'entry-date';
+      tabTag.textContent = tabNameOf(entry.tabId);
+      rightEl.appendChild(tabTag);
+      row.appendChild(textEl);
+      row.appendChild(rightEl);
+      entriesList.appendChild(row);
+    });
+  }
+
+  function renderTrash(){
+    const list = data.entries.filter(e=>e.trashed);
+    entriesList.innerHTML = '';
+    if(!list.length){
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = 'Coșul de gunoi este gol.';
+      entriesList.appendChild(empty);
+      return;
+    }
+    list.forEach(entry=>{
+      const c = colorOf(entry.color);
+      const row = document.createElement('div');
+      row.className = 'entry';
+      row.style.background = c.bg;
+      row.style.color = c.text;
+      row.style.cursor = 'default';
+
+      const textEl = document.createElement('div');
+      textEl.className = 'entry-text';
+      textEl.style.opacity = '.75';
+      textEl.textContent = entry.title;
+
+      const rightEl = document.createElement('div');
+      rightEl.className = 'entry-right';
+
+      const restoreBtn = document.createElement('button');
+      restoreBtn.className = 'trash-action-btn';
+      restoreBtn.title = 'Restaurează';
+      restoreBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>';
+      restoreBtn.addEventListener('click', (e)=>{ e.stopPropagation(); restoreFromTrash(entry.id); });
+
+      const delForeverBtn = document.createElement('button');
+      delForeverBtn.className = 'trash-action-btn';
+      delForeverBtn.title = 'Șterge definitiv';
+      delForeverBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>';
+      delForeverBtn.addEventListener('click', (e)=>{ e.stopPropagation(); deleteForever(entry.id); });
+
+      rightEl.appendChild(restoreBtn);
+      rightEl.appendChild(delForeverBtn);
+      row.appendChild(textEl);
+      row.appendChild(rightEl);
+      entriesList.appendChild(row);
+    });
+  }
+
+  function restoreFromTrash(id){
+    pushUndo();
+    vibrate(14);
+    const entry = findEntry(id);
+    if(!entry) return;
+    entry.trashed = false;
+    persist();
+    renderBody();
+    toast('Restaurat');
+  }
+
+  function deleteForever(id){
+    pushUndo();
+    vibrate([10,30,10,30,10]);
+    data.entries = data.entries.filter(e=>e.id!==id);
+    persist();
+    renderBody();
+    toast('Șters definitiv');
+  }
+
+  // Hamburger menu
+  undoBtn.addEventListener('click', performUndo);
+  detailUndoBtn.addEventListener('click', performUndo);
+
+  // ---------- Settings ----------
+  const settingsOverlay = document.getElementById('settingsOverlay');
+  const settingPinnedDefault = document.getElementById('settingPinnedDefault');
+  const trashCountLabel = document.getElementById('trashCountLabel');
+  const emptyTrashRow = document.getElementById('emptyTrashRow');
+  const pinManageRow = document.getElementById('pinManageRow');
+  const pinStatusLabel = document.getElementById('pinStatusLabel');
+  const settingAlarmSound = document.getElementById('settingAlarmSound');
+  const settingAlarmVolume = document.getElementById('settingAlarmVolume');
+  const volumeValueLabel = document.getElementById('volumeValueLabel');
+  const testAlarmSoundBtn = document.getElementById('testAlarmSoundBtn');
+  const settingTextScale = document.getElementById('settingTextScale');
+  const backupListEl = document.getElementById('backupList');
+  const createBackupBtn = document.getElementById('createBackupBtn');
+
+  function openSettings(){
+    settingPinnedDefault.checked = !!data.settings.pinnedDefault;
+    const n = data.entries.filter(e=>e.trashed).length;
+    trashCountLabel.textContent = n + (n===1 ? ' element' : ' elemente');
+    pinStatusLabel.textContent = data.settings.pin ? 'Setat — apasă pentru schimbare' : 'Nesetat — apasă pentru a seta';
+    settingAlarmSound.value = data.settings.alarmSound || 'chime';
+    settingAlarmVolume.value = Math.round((data.settings.alarmVolume||0.7)*100);
+    volumeValueLabel.textContent = settingAlarmVolume.value + '%';
+    settingTextScale.value = String(data.settings.textScale || 1);
+    renderBackupList();
+    settingsOverlay.classList.add('show');
+  }
+  settingTextScale.addEventListener('change', ()=>{
+    data.settings.textScale = Number(settingTextScale.value);
+    document.documentElement.style.setProperty('--fs-scale', data.settings.textScale);
+    persist();
+  });
+  settingPinnedDefault.addEventListener('change', ()=>{
+    data.settings.pinnedDefault = settingPinnedDefault.checked;
+    persist();
+  });
+  pinManageRow.addEventListener('click', ()=>{
+    if(!data.settings.pin){
+      openPinSetup(()=>{ pinStatusLabel.textContent = 'Setat — apasă pentru schimbare'; });
+    } else {
+      openPinPrompt('Introdu codul PIN actual', ()=>{
+        openPinSetup(()=>{ pinStatusLabel.textContent = 'Setat — apasă pentru schimbare'; });
+      });
+    }
+  });
+  settingAlarmSound.addEventListener('change', ()=>{
+    data.settings.alarmSound = settingAlarmSound.value;
+    persist();
+  });
+  settingAlarmVolume.addEventListener('input', ()=>{
+    volumeValueLabel.textContent = settingAlarmVolume.value + '%';
+    data.settings.alarmVolume = Number(settingAlarmVolume.value)/100;
+    persist();
+  });
+  testAlarmSoundBtn.addEventListener('click', ()=>{
+    playAlarmSound(settingAlarmSound.value, Number(settingAlarmVolume.value)/100);
+  });
+  // ---------- Local backups (separate from live data, per phone/browser) ----------
+  const BACKUP_KEY = 'wenote-mockup-backups-v1';
+  function loadBackups(){
+    try{ return JSON.parse(localStorage.getItem(BACKUP_KEY)) || []; }catch(e){ return []; }
+  }
+  function saveBackups(list){
+    try{ localStorage.setItem(BACKUP_KEY, JSON.stringify(list)); }catch(e){}
+  }
+  function formatBackupLabel(ts){
+    const d = new Date(ts);
+    const pad = n=>String(n).padStart(2,'0');
+    return pad(d.getDate())+'.'+pad(d.getMonth()+1)+'.'+d.getFullYear()+' — '+pad(d.getHours())+':'+pad(d.getMinutes());
+  }
+  function renderBackupList(){
+    const list = loadBackups();
+    backupListEl.innerHTML = '';
+    if(!list.length){
+      backupListEl.innerHTML = '<div class="backup-empty">Niciun backup salvat încă.</div>';
+      return;
+    }
+    list.slice().reverse().forEach(b=>{
+      const row = document.createElement('div');
+      row.className = 'backup-row';
+      const label = document.createElement('div');
+      label.className = 'backup-date';
+      label.textContent = formatBackupLabel(b.ts);
+      const actions = document.createElement('div');
+      actions.className = 'backup-actions';
+      const restoreBtn = document.createElement('button');
+      restoreBtn.className = 'restore';
+      restoreBtn.title = 'Restaurează acest backup';
+      restoreBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>';
+      restoreBtn.addEventListener('click', ()=>{
+        confirmAndRestoreBackup(b);
+      });
+      const delBtn = document.createElement('button');
+      delBtn.title = 'Șterge acest backup';
+      delBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+      delBtn.addEventListener('click', ()=>{
+        const remaining = loadBackups().filter(x=>x.id!==b.id);
+        saveBackups(remaining);
+        renderBackupList();
+        toast('Backup șters');
+      });
+      actions.appendChild(restoreBtn);
+      actions.appendChild(delBtn);
+      row.appendChild(label);
+      row.appendChild(actions);
+      backupListEl.appendChild(row);
+    });
+  }
+  function confirmAndRestoreBackup(backup){
+    // Simple native confirm keeps this a single tap-safe action without another overlay stack.
+    const ok = window.confirm('Restaurezi backup-ul din ' + formatBackupLabel(backup.ts) + '?\nDatele curente vor fi înlocuite (poți da Undo o singură dată imediat după).');
+    if(!ok) return;
+    try{
+      data = JSON.parse(backup.snapshot);
+    }catch(e){ toast('Backup invalid'); return; }
+    undoStack = [];
+    updateUndoButton();
+    persist();
+    document.documentElement.style.setProperty('--fs-scale', data.settings.textScale || 1);
+    renderTabs();
+    renderBody();
+    settingsOverlay.classList.remove('show');
+    toast('Backup restaurat');
+  }
+  createBackupBtn.addEventListener('click', ()=>{
+    const list = loadBackups();
+    list.push({id:cryptoId(), ts:Date.now(), snapshot: JSON.stringify(data)});
+    if(list.length > 20) list.shift();
+    saveBackups(list);
+    renderBackupList();
+    toast('Backup creat — ' + formatBackupLabel(Date.now()));
+  });
+
+  emptyTrashRow.addEventListener('click', ()=>{
+    const n = data.entries.filter(e=>e.trashed).length;
+    if(!n){ toast('Coșul de gunoi este deja gol'); return; }
+    pushUndo();
+    data.entries = data.entries.filter(e=>!e.trashed);
+    persist();
+    trashCountLabel.textContent = '0 elemente';
+    if(viewMode === 'trash') renderBody();
+    toast('Coș de gunoi golit');
+  });
+  document.getElementById('closeSettingsBtn').addEventListener('click', ()=> settingsOverlay.classList.remove('show'));
+  settingsOverlay.addEventListener('click', (e)=>{ if(e.target===settingsOverlay) settingsOverlay.classList.remove('show'); });
+
+  // ---------- Reminder sound engine (Web Audio API) ----------
+  let audioCtx = null;
+  function getAudioCtx(){
+    if(!audioCtx){
+      try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ return null; }
+    }
+    if(audioCtx.state === 'suspended'){ audioCtx.resume().catch(()=>{}); }
+    return audioCtx;
+  }
+  document.addEventListener('pointerdown', ()=>{ getAudioCtx(); }, {once:true});
+
+  function playAlarmSound(type, volume){
+    const ctx = getAudioCtx();
+    if(!ctx){ toast('Sunetul nu este disponibil aici'); return; }
+    const vol = Math.max(0, Math.min(1, typeof volume==='number' ? volume : (data.settings.alarmVolume||0.7)));
+    const now = ctx.currentTime;
+    function tone(freq, start, dur, gainMax){
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, now+start);
+      gain.gain.linearRampToValueAtTime(gainMax*vol, now+start+0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now+start+dur);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now+start);
+      osc.stop(now+start+dur+0.02);
+    }
+    if(type === 'beep'){
+      tone(880, 0, 0.15, 0.5); tone(880, 0.22, 0.15, 0.5);
+    } else if(type === 'bell'){
+      tone(1046, 0, 0.5, 0.45); tone(1568, 0.05, 0.6, 0.3);
+    } else {
+      tone(659, 0, 0.18, 0.4); tone(784, 0.16, 0.18, 0.4); tone(988, 0.32, 0.35, 0.4);
+    }
+  }
+
+  function checkDueReminders(){
+    const now = new Date();
+    let anyDue = false;
+    data.entries.forEach(entry=>{
+      const r = entry.reminder;
+      if(!r || !r.date || !r.time || entry.trashed) return;
+      const due = new Date(r.date + 'T' + r.time + ':00');
+      if(due <= now){
+        anyDue = true;
+        playAlarmSound(data.settings.alarmSound, data.settings.alarmVolume);
+        toast('🔔 Reminder: ' + entry.title);
+        if(r.repeat === 'Daily'){ due.setDate(due.getDate()+1); }
+        else if(r.repeat === 'Weekly'){ due.setDate(due.getDate()+7); }
+        else if(r.repeat === 'Monthly'){ due.setMonth(due.getMonth()+1); }
+        else if(r.repeat === 'Yearly'){ due.setFullYear(due.getFullYear()+1); }
+        else { entry.reminder = null; }
+        if(entry.reminder){
+          entry.reminder.date = due.toISOString().slice(0,10);
+        }
+      }
+    });
+    if(anyDue){ persist(); if(!detailPage.classList.contains('hidden')) { /* leave open note as-is */ } renderBody(); }
+  }
+  setInterval(checkDueReminders, 20000);
+
+  document.getElementById('hamburgerBtn').addEventListener('click', (e)=>{
+    e.stopPropagation();
+    hamburgerMenu.classList.toggle('show');
+  });
+  document.addEventListener('click', (e)=>{
+    if(!hamburgerMenu.contains(e.target) && e.target.id !== 'hamburgerBtn' && !e.target.closest('#hamburgerBtn')){
+      hamburgerMenu.classList.remove('show');
+    }
+  });
+  hamburgerMenu.addEventListener('click', (e)=>{
+    const item = e.target.closest('.dropdown-item');
+    if(!item) return;
+    hamburgerMenu.classList.remove('show');
+    if(item.dataset.action === 'settings'){ openSettings(); return; }
+    setViewMode(item.dataset.view);
+  });
+
+  function renderEntries(){
+    const all = data.entries.filter(e=>e.tabId===data.activeTab && !e.archived && !e.trashed);
+    entriesList.innerHTML = '';
+    if(!all.length){
+      sectionLabel.classList.add('hidden');
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = 'Nicio intrare încă în acest tab. Apasă + pentru a adăuga una.';
+      entriesList.appendChild(empty);
+      return;
+    }
+    const pinned = all.filter(e=>e.pinned).slice().sort((a,b)=> (b.sticky?1:0) - (a.sticky?1:0));
+    const others = all.filter(e=>!e.pinned).slice().sort((a,b)=> (b.sticky?1:0) - (a.sticky?1:0));
+
+    if(pinned.length){
+      sectionLabel.textContent = 'Fixate';
+      sectionLabel.classList.remove('hidden');
+      pinned.forEach(entry=> entriesList.appendChild(buildEntryRow(entry)));
+    } else {
+      sectionLabel.classList.add('hidden');
+    }
+    if(others.length){
+      const othersLabel = document.createElement('div');
+      othersLabel.className = 'section-label';
+      othersLabel.textContent = 'Others';
+      entriesList.appendChild(othersLabel);
+      others.forEach(entry=> entriesList.appendChild(buildEntryRow(entry)));
+    }
+  }
+
+  function buildEntryRow(entry){
+    const c = colorOf(entry.color);
+    const row = document.createElement('div');
+    row.className = 'entry' + (selectionMode && selectedIds.has(entry.id) ? ' selected' : '');
+    row.dataset.id = entry.id;
+    row.style.background = c.bg;
+    row.style.color = c.text;
+
+    const handleEl = document.createElement('div');
+    handleEl.className = 'entry-handle';
+    handleEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="16" x2="20" y2="16"/></svg>';
+
+    const textEl = document.createElement('div');
+    textEl.className = 'entry-text';
+    textEl.textContent = entry.title;
+    if(entry.checked){ textEl.style.textDecoration='line-through'; textEl.style.opacity='.6'; }
+
+    const rightEl = document.createElement('div');
+    rightEl.className = 'entry-right';
+
+    if(entry.locked){
+      rightEl.appendChild(smallIcon(c.text, '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4" fill="none" stroke="'+c.text+'" stroke-width="2"/>', true));
+    }
+    if(entry.sticky){
+      rightEl.appendChild(smallIcon(c.text, '<path d="M12 2 9 9l-6 1 4.5 4.5L6 21l6-3.5L18 21l-1.5-6.5L21 10l-6-1-3-7z"/>', true));
+    }
+    if(entry.checked){
+      rightEl.appendChild(smallIcon(c.text, '<path d="M20 6 9 17l-5-5" fill="none" stroke="'+c.text+'" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>', true));
+    }
+
+    if(entry.reminder){
+      const r = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      r.setAttribute('class','reminder-icon');
+      r.setAttribute('viewBox','0 0 24 24');
+      r.setAttribute('fill','none');
+      r.setAttribute('stroke', c.text);
+      r.setAttribute('stroke-width','2');
+      r.innerHTML = '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/>';
+      rightEl.appendChild(r);
+    }
+
+    if(entry.pinned){
+      const pin = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      pin.setAttribute('class','pin-icon');
+      pin.setAttribute('viewBox','0 0 24 24');
+      pin.setAttribute('fill', c.text);
+      pin.innerHTML = '<path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v7h1.6v-7H18v-2z"/>';
+      rightEl.appendChild(pin);
+    }
+
+    const dateEl = document.createElement('div');
+    dateEl.className = 'entry-date';
+    dateEl.textContent = entry.date;
+    rightEl.appendChild(dateEl);
+
+    row.appendChild(handleEl);
+    row.appendChild(textEl);
+    row.appendChild(rightEl);
+
+    if(selectionMode && selectedIds.has(entry.id)){
+      const badge = document.createElement('div');
+      badge.className = 'entry-select-badge';
+      badge.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#1c1c1e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+      row.appendChild(badge);
+    }
+    return row;
+  }
+
+  function smallIcon(color, innerSvg, filled){
+    const s = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    s.setAttribute('class','pin-icon');
+    s.setAttribute('viewBox','0 0 24 24');
+    if(filled) s.setAttribute('fill', color);
+    s.innerHTML = innerSvg;
+    return s;
+  }
+
+  // ---------- Entries: tap to open / select, long-press to start multi-select, drag handle to reorder ----------
+  let selectionMode = false;
+  let selectedIds = new Set();
+  let justLongPressed = false;
+  let pressTimer = null, pressStartX = 0, pressStartY = 0, pressId = null;
+
+  entriesList.addEventListener('pointerdown', (e)=>{
+    if(viewMode !== 'notes') return;
+    if(e.target.closest('.entry-handle')) return;
+    const row = e.target.closest('.entry');
+    if(!row) return;
+    pressId = row.dataset.id;
+    pressStartX = e.clientX; pressStartY = e.clientY;
+    clearTimeout(pressTimer);
+    pressTimer = setTimeout(()=>{
+      justLongPressed = true;
+      if(navigator.vibrate) navigator.vibrate(12);
+      if(!selectionMode){ enterSelectionMode(pressId); } else { toggleSelect(pressId); }
+    }, 420);
+  });
+  entriesList.addEventListener('pointermove', (e)=>{
+    if(!pressTimer) return;
+    if(Math.abs(e.clientX-pressStartX)>10 || Math.abs(e.clientY-pressStartY)>10){
+      clearTimeout(pressTimer); pressTimer=null;
+    }
+  });
+  entriesList.addEventListener('pointerup', ()=>{ clearTimeout(pressTimer); pressTimer=null; });
+  entriesList.addEventListener('pointercancel', ()=>{ clearTimeout(pressTimer); pressTimer=null; });
+
+  entriesList.addEventListener('click', (e)=>{
+    if(justLongPressed){ justLongPressed=false; return; }
+    if(e.target.closest('.entry-handle')) return;
+    const row = e.target.closest('.entry');
+    if(!row) return;
+    if(selectionMode){ toggleSelect(row.dataset.id); return; }
+    openDetail(row.dataset.id);
+  });
+
+  function enterSelectionMode(id){
+    selectionMode = true;
+    selectedIds = new Set([id]);
+    updateSelectionToolbar();
+    renderBody();
+  }
+  function toggleSelect(id){
+    if(selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
+    if(selectedIds.size === 0){ exitSelectionMode(); return; }
+    updateSelectionToolbar();
+    renderBody();
+  }
+  function exitSelectionMode(){
+    selectionMode = false;
+    selectedIds = new Set();
+    updateSelectionToolbar();
+    renderBody();
+  }
+  function updateSelectionToolbar(){
+    document.getElementById('selectionCount').textContent = String(selectedIds.size);
+    mainTopbar.classList.toggle('hidden', selectionMode);
+    selectionToolbar.classList.toggle('hidden', !selectionMode);
+  }
+
+  document.getElementById('selectionBackBtn').addEventListener('click', exitSelectionMode);
+
+  document.getElementById('selPaletteBtn').addEventListener('click', ()=>{
+    renderColorRow(detailColorRow, null, (id)=>{
+      pushUndo();
+      selectedIds.forEach(eid=>{ const en=findEntry(eid); if(en) en.color = id; });
+      persist();
+      colorOverlay.classList.remove('show');
+      exitSelectionMode();
+    });
+    colorOverlay.classList.add('show');
+  });
+
+  document.getElementById('selMoveBtn').addEventListener('click', ()=>{
+    moveList.innerHTML = '';
+    data.tabs.forEach(tab=>{
+      const item = document.createElement('div');
+      item.className = 'label-item';
+      item.innerHTML = '<svg class="tag-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M20.6 12.6 12.7 20.5a2 2 0 0 1-2.8 0l-7.4-7.4a2 2 0 0 1 0-2.8L10.4 2.4H19a2 2 0 0 1 2 2v8.2Z"/></svg><span>'+tab.name+'</span>';
+      item.addEventListener('click', ()=>{
+        pushUndo();
+        selectedIds.forEach(eid=>{ const en=findEntry(eid); if(en) en.tabId = tab.id; });
+        persist();
+        moveOverlay.classList.remove('show');
+        exitSelectionMode();
+        toast('Mutate în „' + tab.name + '"');
+      });
+      moveList.appendChild(item);
+    });
+    moveOverlay.classList.add('show');
+  });
+
+  document.getElementById('selPinBtn').addEventListener('click', ()=>{
+    pushUndo();
+    const allPinned = Array.from(selectedIds).every(id=>{ const en=findEntry(id); return en && en.pinned; });
+    selectedIds.forEach(id=>{ const en=findEntry(id); if(en) en.pinned = !allPinned; });
+    persist();
+    exitSelectionMode();
+  });
+
+  document.getElementById('selDeleteBtn').addEventListener('click', ()=>{
+    pushUndo();
+    vibrate([10,30,10,30,10]);
+    const n = selectedIds.size;
+    selectedIds.forEach(id=>{ const en=findEntry(id); if(en) en.trashed = true; });
+    persist();
+    exitSelectionMode();
+    toast(n + (n===1 ? ' notiță mutată în coș' : ' notițe mutate în coș'));
+  });
+
+  enableHandleDrag(entriesList, '.entry', '.entry-handle', ()=>{
+    pushUndo();
+    const orderedIds = Array.from(entriesList.querySelectorAll('.entry')).map(el=>el.dataset.id);
+    const tabId = data.activeTab;
+    const reordered = orderedIds.map(id => data.entries.find(e=>e.id===id)).filter(Boolean);
+    data.entries = data.entries.filter(e=>e.tabId!==tabId).concat(reordered);
+    persist();
+  });
+
+  // ---------- Manage tabs screen ----------
+  let tabColorTargetId = null;
+
+  function renderManageTabs(){
+    manageList.innerHTML = '';
+    data.tabs.forEach(tab=>{
+      const row = document.createElement('div');
+      row.className = 'manage-row';
+      row.dataset.id = tab.id;
+
+      const del = document.createElement('button');
+      del.className = 'manage-del';
+      del.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+      del.addEventListener('click', ()=> deleteTab(tab.id));
+
+      const dot = document.createElement('div');
+      dot.className = 'manage-dot';
+      dot.style.background = tab.color || '#888';
+      dot.addEventListener('click', ()=>{
+        tabColorTargetId = tab.id;
+        renderTabColorRow();
+        tabColorOverlay.classList.add('show');
+      });
+
+      const name = document.createElement('div');
+      name.className = 'manage-name';
+      name.textContent = tab.name;
+      name.addEventListener('click', ()=> startRenameTab(row, tab, name));
+
+      const lockBtn = document.createElement('button');
+      lockBtn.className = 'manage-lock' + (tab.locked ? ' active' : '');
+      lockBtn.title = tab.locked ? 'Deblochează tabul' : 'Blochează tabul cu PIN';
+      lockBtn.innerHTML = tab.locked
+        ? '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4" fill="none" stroke="currentColor" stroke-width="2"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2.5"/></svg>';
+      lockBtn.addEventListener('click', ()=>{
+        if(!tab.locked){
+          const doLockTab = ()=>{
+            pushUndo();
+            tab.locked = true;
+            persist();
+            renderManageTabs();
+            toast('Tab blocat');
+          };
+          if(!data.settings.pin){ openPinSetup(doLockTab); } else { doLockTab(); }
+        } else {
+          openPinPrompt('Introdu codul PIN pentru a debloca tabul', ()=>{
+            pushUndo();
+            tab.locked = false;
+            unlockedTabIds.add(tab.id);
+            persist();
+            renderManageTabs();
+            toast('Tab deblocat');
+          });
+        }
+      });
+
+      const handle = document.createElement('div');
+      handle.className = 'manage-handle';
+      handle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="16" x2="20" y2="16"/></svg>';
+
+      row.appendChild(del);
+      row.appendChild(dot);
+      row.appendChild(name);
+      row.appendChild(lockBtn);
+      row.appendChild(handle);
+      manageList.appendChild(row);
+    });
+  }
+
+  function startRenameTab(row, tab, nameEl){
+    const input = document.createElement('input');
+    input.className = 'manage-name-input';
+    input.value = tab.name;
+    row.replaceChild(input, nameEl);
+    input.focus();
+    input.select();
+    function finishRename(){
+      const val = input.value.trim();
+      if(val && val !== tab.name){
+        pushUndo();
+        tab.name = val;
+      }
+      persist();
+      renderTabs();
+      renderManageTabs();
+    }
+    input.addEventListener('blur', finishRename);
+    input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') input.blur(); });
+  }
+
+  function deleteTab(tabId){
+    pushUndo();
+    const remaining = data.tabs.filter(t=>t.id!==tabId);
+    const fallbackId = remaining.length ? remaining[0].id : null;
+    data.entries.forEach(e=>{ if(e.tabId===tabId && fallbackId) e.tabId = fallbackId; });
+    data.tabs = remaining;
+    if(data.activeTab === tabId){ data.activeTab = fallbackId || GEAR_ID; }
+    persist();
+    renderTabs();
+    renderManageTabs();
+    toast('Tab șters');
+  }
+
+  function renderTabColorRow(){
+    tabColorRow.innerHTML = '';
+    const tab = data.tabs.find(t=>t.id===tabColorTargetId);
+    TAB_COLORS.forEach(hex=>{
+      const sw = document.createElement('div');
+      sw.className = 'swatch' + (tab && tab.color===hex ? ' selected':'');
+      sw.style.background = hex;
+      sw.style.boxShadow = 'inset 0 0 0 1px rgba(255,255,255,0.2)';
+      sw.addEventListener('click', ()=>{
+        if(tab){ pushUndo(); tab.color = hex; persist(); }
+        renderTabColorRow();
+        renderManageTabs();
+      });
+      tabColorRow.appendChild(sw);
+    });
+  }
+  document.getElementById('cancelTabColorBtn').addEventListener('click', ()=> tabColorOverlay.classList.remove('show'));
+  tabColorOverlay.addEventListener('click', (e)=>{ if(e.target===tabColorOverlay) tabColorOverlay.classList.remove('show'); });
+
+  // Drag & drop: tab order (via handle)
+  enableHandleDrag(manageList, '.manage-row', '.manage-handle', ()=>{
+    pushUndo();
+    const orderedIds = Array.from(manageList.querySelectorAll('.manage-row')).map(el=>el.dataset.id);
+    data.tabs.sort((a,b)=> orderedIds.indexOf(a.id) - orderedIds.indexOf(b.id));
+    persist();
+    renderTabs();
+  });
+
+  function enableHandleDrag(container, itemSelector, handleSelector, onReorder){
+    let dragEl=null, pointerId=null;
+    container.addEventListener('pointerdown', (e)=>{
+      const handle = e.target.closest(handleSelector);
+      if(!handle) return;
+      dragEl = handle.closest(itemSelector);
+      if(!dragEl) return;
+      e.preventDefault();
+      pointerId = e.pointerId;
+      dragEl.classList.add('dragging');
+      try{ dragEl.setPointerCapture(pointerId); }catch(err){}
+    });
+    container.addEventListener('pointermove', (e)=>{
+      if(!dragEl) return;
+      e.preventDefault();
+      const items = Array.from(container.querySelectorAll(itemSelector)).filter(el=>el!==dragEl);
+      const dragRect = dragEl.getBoundingClientRect();
+      const dragCenter = e.clientY;
+      for(const item of items){
+        const r = item.getBoundingClientRect();
+        const center = r.top + r.height/2;
+        const dragIsBefore = !!(dragEl.compareDocumentPosition(item) & Node.DOCUMENT_POSITION_FOLLOWING);
+        if(dragCenter > center && dragIsBefore){
+          container.insertBefore(dragEl, item.nextSibling);
+          break;
+        } else if(dragCenter < center && !dragIsBefore){
+          container.insertBefore(dragEl, item);
+          break;
+        }
+      }
+    });
+    function finish(){
+      if(dragEl){
+        dragEl.classList.remove('dragging');
+        try{ dragEl.releasePointerCapture(pointerId); }catch(err){}
+        if(onReorder) onReorder();
+      }
+      dragEl=null;
+    }
+    container.addEventListener('pointerup', finish);
+    container.addEventListener('pointercancel', finish);
+  }
+
+  // ---------- Swipe between tabs (carousel) ----------
+  let touchStartX=0, touchStartY=0, touching=false;
+  bodyScroll.addEventListener('touchstart', (e)=>{
+    if(e.touches.length!==1) return;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touching = true;
+  }, {passive:true});
+  bodyScroll.addEventListener('touchend', (e)=>{
+    if(!touching) return;
+    touching = false;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if(Math.abs(dx) > 65 && Math.abs(dx) > Math.abs(dy)*1.4){
+      const order = navOrder();
+      const idx = order.indexOf(data.activeTab);
+      if(dx < 0 && idx < order.length-1){
+        animateSwipe(-1);
+        switchTab(order[idx+1]);
+      } else if(dx > 0 && idx > 0){
+        animateSwipe(1);
+        switchTab(order[idx-1]);
+      }
+    }
+  }, {passive:true});
+  function animateSwipe(dir){
+    bodyScroll.style.transition = 'transform .12s ease-out, opacity .12s ease-out';
+    bodyScroll.style.transform = 'translateX(' + (dir*24) + 'px)';
+    bodyScroll.style.opacity = '0.4';
+    setTimeout(()=>{
+      bodyScroll.style.transition = 'none';
+      bodyScroll.style.transform = 'translateX(' + (-dir*24) + 'px)';
+      requestAnimationFrame(()=>{
+        bodyScroll.style.transition = 'transform .18s ease-out, opacity .18s ease-out';
+        bodyScroll.style.transform = 'translateX(0)';
+        bodyScroll.style.opacity = '1';
+      });
+    }, 90);
+  }
+
+  // ---------- New entry sheet ----------
+  function renderColorRow(container, currentColor, onPick){
+    container.innerHTML = '';
+    COLORS.forEach(c=>{
+      const sw = document.createElement('div');
+      sw.className = 'swatch' + (c.id===currentColor ? ' selected':'');
+      sw.style.background = c.bg;
+      sw.style.boxShadow = c.id==='default' ? 'inset 0 0 0 1px #555' : 'none';
+      sw.addEventListener('click', ()=> onPick(c.id));
+      container.appendChild(sw);
+    });
+  }
+
+  function openNewEntrySheet(){
+    newEntryTitleInput.value = '';
+    selectedColor = 'default';
+    renderColorRow(colorRow, selectedColor, pickNewColor);
+    entryOverlay.classList.add('show');
+    setTimeout(()=>newEntryTitleInput.focus(), 50);
+  }
+  function pickNewColor(id){ selectedColor = id; renderColorRow(colorRow, selectedColor, pickNewColor); }
+
+  document.getElementById('fabAdd').addEventListener('click', ()=>{
+    if(data.activeTab === GEAR_ID){
+      tabNameInput.value = '';
+      tabOverlay.classList.add('show');
+      setTimeout(()=>tabNameInput.focus(), 50);
+    } else {
+      openNewEntrySheet();
+    }
+  });
+  document.getElementById('newEntryTopBtn').addEventListener('click', openNewEntrySheet);
+  document.getElementById('cancelEntryBtn').addEventListener('click', ()=> entryOverlay.classList.remove('show'));
+  entryOverlay.addEventListener('click', (e)=>{ if(e.target===entryOverlay) entryOverlay.classList.remove('show'); });
+
+  document.getElementById('saveEntryBtn').addEventListener('click', ()=>{
+    const title = newEntryTitleInput.value.trim();
+    if(!title){ newEntryTitleInput.focus(); return; }
+    pushUndo();
+    const entry = {
+      id: cryptoId(), tabId: data.activeTab, title: title,
+      color: selectedColor, date: todayLabel(), pinned: !!data.settings.pinnedDefault, reminder: null,
+      checked:false, locked:false, sticky:false, archived:false, trashed:false,
+      lines: [{id:cryptoId(), type:'text', text:'', done:false}]
+    };
+    data.entries.unshift(entry);
+    persist();
+    renderBody();
+    entryOverlay.classList.remove('show');
+  });
+
+  // ---------- Search ----------
+  function openSearch(){
+    searchInput.value = '';
+    renderSearchResults('');
+    searchOverlay.classList.add('show');
+    setTimeout(()=>searchInput.focus(), 60);
+  }
+  document.getElementById('searchTopBtn').addEventListener('click', openSearch);
+  document.getElementById('cancelSearchBtn').addEventListener('click', ()=> searchOverlay.classList.remove('show'));
+  searchOverlay.addEventListener('click', (e)=>{ if(e.target===searchOverlay) searchOverlay.classList.remove('show'); });
+  searchInput.addEventListener('input', ()=> renderSearchResults(searchInput.value.trim().toLowerCase()));
+
+  function renderSearchResults(q){
+    searchResults.innerHTML = '';
+    if(!q){ searchResults.innerHTML = '<div class="search-empty">Scrie pentru a căuta o notiță după titlu.</div>'; return; }
+    const matches = data.entries.filter(e=> !e.archived && !e.trashed && e.title.toLowerCase().includes(q));
+    if(!matches.length){ searchResults.innerHTML = '<div class="search-empty">Niciun rezultat.</div>'; return; }
+    matches.forEach(entry=>{
+      const row = document.createElement('div');
+      row.className = 'search-result';
+      const t = document.createElement('div'); t.className = 'sr-title'; t.textContent = entry.title;
+      const tb = document.createElement('div'); tb.className = 'sr-tab'; tb.textContent = tabNameOf(entry.tabId);
+      row.appendChild(t); row.appendChild(tb);
+      row.addEventListener('click', ()=>{
+        searchOverlay.classList.remove('show');
+        overflowMenu.classList.remove('show');
+        if(viewMode !== 'notes'){ setViewMode('notes'); }
+        if(data.activeTab !== entry.tabId){ data.activeTab = entry.tabId; persist(); renderTabs(); }
+        openDetail(entry.id);
+      });
+      searchResults.appendChild(row);
+    });
+  }
+
+  // ---------- New tab sheet ----------
+  document.getElementById('cancelTabBtn').addEventListener('click', ()=> tabOverlay.classList.remove('show'));
+  tabOverlay.addEventListener('click', (e)=>{ if(e.target===tabOverlay) tabOverlay.classList.remove('show'); });
+  document.getElementById('saveTabBtn').addEventListener('click', ()=>{
+    const name = tabNameInput.value.trim();
+    if(!name){ tabNameInput.focus(); return; }
+    pushUndo();
+    const id = 't' + cryptoId();
+    const color = TAB_COLORS[data.tabs.length % TAB_COLORS.length];
+    data.tabs.push({id, name, color});
+    data.activeTab = id;
+    persist();
+    renderTabs();
+    renderBody();
+    tabOverlay.classList.remove('show');
+  });
+
+  // ---------- Detail page ----------
+  function findEntry(id){ return data.entries.find(e=>e.id===id); }
+  function tabNameOf(tabId){ const t = data.tabs.find(t=>t.id===tabId); return t ? t.name : ''; }
+
+  function applyDetailColor(entry){
+    const c = colorOf(entry.color);
+    detailColorArea.style.background = c.bg;
+    detailColorArea.style.color = c.text;
+    detailTabName.style.color = c.text;
+    detailCreatedLabel.style.color = c.text;
+    detailPinIcon.style.color = c.text;
+    detailPinIcon.setAttribute('fill', entry.pinned ? c.text : 'none');
+    detailPinIcon.setAttribute('stroke', c.text);
+    detailLockIcon.style.color = c.text;
+    detailStickyIcon.style.color = c.text;
+    detailCheckIcon.style.color = c.text;
+    detailLockIcon.classList.toggle('hidden', !entry.locked);
+    detailStickyIcon.classList.toggle('hidden', !entry.sticky);
+    detailCheckIcon.classList.toggle('hidden', !entry.checked);
+  }
+
+  function refreshMenuLabels(entry){
+    pinMenuLabel.textContent = entry.pinned ? 'Unpin' : 'Pin';
+    checkMenuLabel.textContent = entry.checked ? 'Uncheck' : 'Check';
+    lockMenuLabel.textContent = entry.locked ? 'Unlock' : 'Lock';
+    stickMenuLabel.textContent = entry.sticky ? 'Unstick' : 'Stick';
+    archiveMenuLabel.textContent = entry.archived ? 'Unarchive' : 'Archive';
+  }
+
+  function isEffectivelyLocked(entry){
+    return !!entry.locked && !unlockedEntryIds.has(entry.id);
+  }
+  function applyLockState(entry){
+    const locked = isEffectivelyLocked(entry);
+    detailTitleInput.readOnly = true;
+    detailTitleInput.classList.toggle('locked', locked);
+    document.getElementById('detailEditBtn').style.opacity = locked ? '.4' : '1';
+    document.getElementById('toolAlarmBtn').style.opacity = locked ? '.4' : '1';
+    document.getElementById('toolAttachBtn').style.opacity = locked ? '.4' : '1';
+    lineAddRow.style.display = locked ? 'none' : 'flex';
+  }
+
+  // ---------- Unified per-line content model ----------
+  // entry.lines = [{id, type:'text'|'checkbox'|'bullet'|'number', text, done}]
+  function migrateEntryToLines(entry){
+    if(!entry.attachments) entry.attachments = [];
+    if(entry.lines && entry.lines.length) return;
+    if(entry.checklistMode && entry.checklist && entry.checklist.length){
+      entry.lines = entry.checklist.map(i=>({id:i.id||cryptoId(), type:'checkbox', text:i.text||'', done:!!i.done}));
+    } else {
+      const raw = (entry.body || '').split('\n');
+      entry.lines = raw.map(t=>({id:cryptoId(), type:'text', text:t, done:false}));
+    }
+    if(!entry.lines.length) entry.lines = [{id:cryptoId(), type:'text', text:'', done:false}];
+  }
+
+  function placeCursorAtEnd(el){
+    el.focus();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  function toggleLineDone(entry, line){
+    pushUndo();
+    vibrate(14);
+    line.done = !line.done;
+    const lines = entry.lines;
+    const idx = lines.indexOf(line);
+    let start = idx, end = idx;
+    while(start>0 && lines[start-1].type==='checkbox') start--;
+    while(end<lines.length-1 && lines[end+1].type==='checkbox') end++;
+    const run = lines.splice(start, end-start+1);
+    const rest = run.filter(l=>l!==line);
+    if(line.done){
+      rest.push(line);
+    } else {
+      const firstDoneIdx = rest.findIndex(l=>l.done);
+      if(firstDoneIdx===-1) rest.push(line); else rest.splice(firstDoneIdx, 0, line);
+    }
+    lines.splice(start, 0, ...rest);
+    persist();
+    renderDetailLines(entry);
+  }
+
+  function toggleLineType(entry, type){
+    let line = entry.lines.find(l=>l.id===focusedLineId);
+    if(!line) line = entry.lines[entry.lines.length-1];
+    pushUndo();
+    if(line.type === type){
+      line.type = 'text';
+      line.done = false;
+    } else {
+      line.type = type;
+      line.done = false;
+    }
+    persist();
+    renderDetailLines(entry);
+    toast(line.type==='text' ? 'Linie simplă' : (type==='checkbox' ? 'Checkbox adăugat' : type==='bullet' ? 'Bullet adăugat' : 'Numerotare adăugată'));
+  }
+
+  let linesSnapshotted = new Set();
+
+  function renderDetailLines(entry){
+    const c = colorOf(entry.color);
+    const locked = isEffectivelyLocked(entry);
+    detailLinesEl.innerHTML = '';
+    let runNotDoneSeen = false, runSepDone = false, numberCounter = 0, prevType = null;
+
+    entry.lines.forEach(line=>{
+      if(line.type === 'checkbox' && prevType !== 'checkbox'){ runNotDoneSeen=false; runSepDone=false; }
+      if(line.type === 'number'){ numberCounter = (prevType==='number') ? numberCounter+1 : 1; } else { numberCounter = 0; }
+
+      if(line.type === 'checkbox'){
+        if(!line.done) runNotDoneSeen = true;
+        else if(runNotDoneSeen && !runSepDone){
+          const sep = document.createElement('div');
+          sep.className = 'line-separator';
+          detailLinesEl.appendChild(sep);
+          runSepDone = true;
+        }
+      }
+
+      const row = document.createElement('div');
+      row.className = 'detail-line' + (line.type==='checkbox' && line.done ? ' done' : '');
+      row.dataset.id = line.id;
+
+      if(line.type === 'checkbox'){
+        const box = document.createElement('div');
+        box.className = 'ci-box' + (line.done ? ' checked-box' : '') + (locked ? ' locked' : '');
+        box.style.color = c.text;
+        box.innerHTML = line.done ? '<svg viewBox="0 0 24 24" fill="none" stroke="'+c.text+'" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' : '';
+        box.addEventListener('click', ()=>{ if(!locked) toggleLineDone(entry, line); });
+        row.appendChild(box);
+      } else if(line.type === 'bullet'){
+        const marker = document.createElement('div');
+        marker.className = 'dl-marker';
+        marker.textContent = '•';
+        row.appendChild(marker);
+      } else if(line.type === 'number'){
+        const marker = document.createElement('div');
+        marker.className = 'dl-marker';
+        marker.textContent = numberCounter + '.';
+        row.appendChild(marker);
+      }
+
+      const text = document.createElement('div');
+      text.className = 'dl-text';
+      text.textContent = line.text;
+      text.contentEditable = locked ? 'false' : 'true';
+
+      text.addEventListener('focus', ()=>{
+        focusedLineId = line.id;
+        if(!linesSnapshotted.has(line.id)){ pushUndo(); linesSnapshotted.add(line.id); }
+      });
+      text.addEventListener('blur', ()=>{
+        line.text = text.textContent;
+        persist();
+      });
+      text.addEventListener('keydown', (e)=>{
+        if(locked) return;
+        if(e.key === 'Enter'){
+          e.preventDefault();
+          const currentIsEmpty = text.textContent.trim().length === 0;
+          if(currentIsEmpty && line.type !== 'text'){
+            pushUndo();
+            line.type = 'text';
+            line.done = false;
+            persist();
+            renderDetailLines(entry);
+            requestAnimationFrame(()=>{
+              const el = detailLinesEl.querySelector('[data-id="'+line.id+'"] .dl-text');
+              if(el) el.focus();
+            });
+            return;
+          }
+          pushUndo();
+          line.text = text.textContent.trim();
+          const idx = entry.lines.indexOf(line);
+          const contType = (line.type==='checkbox'||line.type==='bullet'||line.type==='number') ? line.type : 'text';
+          const newLine = {id:cryptoId(), type:contType, text:'', done:false};
+          entry.lines.splice(idx+1, 0, newLine);
+          persist();
+          focusedLineId = newLine.id;
+          linesSnapshotted.add(newLine.id);
+          renderDetailLines(entry);
+          requestAnimationFrame(()=>{
+            const el = detailLinesEl.querySelector('[data-id="'+newLine.id+'"] .dl-text');
+            if(el) el.focus();
+          });
+        } else if(e.key === 'Backspace' && text.textContent.length === 0){
+          e.preventDefault();
+          const idx = entry.lines.indexOf(line);
+          if(line.type !== 'text'){
+            pushUndo();
+            line.type = 'text';
+            line.done = false;
+            persist();
+            renderDetailLines(entry);
+            requestAnimationFrame(()=>{
+              const el = detailLinesEl.querySelector('[data-id="'+line.id+'"] .dl-text');
+              if(el) placeCursorAtEnd(el);
+            });
+          } else if(idx > 0){
+            pushUndo();
+            entry.lines.splice(idx, 1);
+            persist();
+            renderDetailLines(entry);
+            requestAnimationFrame(()=>{
+              const texts = detailLinesEl.querySelectorAll('.dl-text');
+              const prev = texts[idx-1];
+              if(prev) placeCursorAtEnd(prev);
+            });
+          }
+        }
+      });
+      row.appendChild(text);
+
+      if(!locked){
+        const del = document.createElement('button');
+        del.className = 'ci-del';
+        del.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+        del.addEventListener('click', ()=>{
+          pushUndo();
+          entry.lines = entry.lines.filter(l=>l.id!==line.id);
+          if(!entry.lines.length) entry.lines.push({id:cryptoId(), type:'text', text:'', done:false});
+          persist();
+          renderDetailLines(entry);
+        });
+        row.appendChild(del);
+      }
+
+      detailLinesEl.appendChild(row);
+      prevType = line.type;
+    });
+  }
+
+  enableHandleDrag(detailLinesEl, '.detail-line', '.dl-handle', ()=>{
+    const entry = findEntry(openEntryId);
+    if(!entry || !entry.lines || isEffectivelyLocked(entry)) return;
+    pushUndo();
+    const orderedIds = Array.from(detailLinesEl.querySelectorAll('.detail-line')).map(el=>el.dataset.id);
+    entry.lines.sort((a,b)=> orderedIds.indexOf(a.id) - orderedIds.indexOf(b.id));
+    persist();
+    renderDetailLines(entry);
+  });
+
+  lineAddRow.addEventListener('click', ()=>{
+    const entry = findEntry(openEntryId);
+    if(!entry || isEffectivelyLocked(entry)) return;
+    pushUndo();
+    const newLine = {id:cryptoId(), type:'text', text:'', done:false};
+    entry.lines.push(newLine);
+    persist();
+    focusedLineId = newLine.id;
+    linesSnapshotted.add(newLine.id);
+    renderDetailLines(entry);
+    requestAnimationFrame(()=>{
+      const el = detailLinesEl.querySelector('[data-id="'+newLine.id+'"] .dl-text');
+      if(el) el.focus();
+    });
+  });
+
+  let unlockedEntryIds = new Set();
+
+  function openDetail(id){
+    const entry = findEntry(id);
+    if(!entry) return;
+    openEntryId = id;
+    migrateEntryToLines(entry);
+    linesSnapshotted = new Set();
+    focusedLineId = entry.lines.length ? entry.lines[entry.lines.length-1].id : null;
+    detailTitleInput.value = entry.title;
+    detailTitleInput.readOnly = true;
+    detailTabName.textContent = tabNameOf(entry.tabId);
+    detailCreatedLabel.textContent = 'Created ' + entry.date;
+    applyDetailColor(entry);
+    applyLockState(entry);
+    refreshMenuLabels(entry);
+    listPage.classList.add('hidden');
+    detailPage.classList.remove('hidden');
+    overflowMenu.classList.remove('show');
+
+    if(entry.locked && !unlockedEntryIds.has(id)){
+      detailLinesEl.innerHTML = '';
+      lineAddRow.style.display = 'none';
+      document.getElementById('attachmentsGallery').innerHTML = '';
+      openPinPrompt('Notiță blocată — introdu codul PIN', ()=>{
+        unlockedEntryIds.add(id);
+        renderDetailLines(entry);
+        renderAttachments(entry);
+        applyLockState(entry);
+      }, ()=>{
+        closeDetail();
+      });
+    } else {
+      renderDetailLines(entry);
+      renderAttachments(entry);
+    }
+  }
+
+  function closeDetail(){
+    saveDetailFields();
+    detailPage.classList.add('hidden');
+    listPage.classList.remove('hidden');
+    renderBody();
+  }
+
+  function saveDetailFields(){
+    if(!openEntryId) return;
+    const entry = findEntry(openEntryId);
+    if(!entry || isEffectivelyLocked(entry)) return;
+    entry.title = detailTitleInput.value.trim() || entry.title;
+    persist();
+  }
+
+  document.getElementById('detailBackBtn').addEventListener('click', closeDetail);
+  document.getElementById('toolCheckBtn').addEventListener('click', closeDetail);
+
+  document.getElementById('detailEditBtn').addEventListener('click', ()=>{
+    const entry = findEntry(openEntryId);
+    if(entry && isEffectivelyLocked(entry)){ toast('Notița este blocată'); return; }
+    if(detailTitleInput.readOnly){ pushUndo(); }
+    detailTitleInput.readOnly = !detailTitleInput.readOnly;
+    if(!detailTitleInput.readOnly){
+      detailTitleInput.focus();
+      detailTitleInput.select();
+    } else {
+      saveDetailFields();
+    }
+  });
+  detailTitleInput.addEventListener('blur', ()=>{ if(!detailTitleInput.readOnly){ detailTitleInput.readOnly = true; saveDetailFields(); }});
+
+  detailPinIcon.parentElement.addEventListener('click', (e)=>{
+    if(e.target.closest('#detailPinIcon') === null) return;
+    togglePin();
+  });
+  function togglePin(){
+    const entry = findEntry(openEntryId);
+    if(!entry) return;
+    pushUndo();
+    vibrate(14);
+    entry.pinned = !entry.pinned;
+    persist();
+    applyDetailColor(entry);
+    refreshMenuLabels(entry);
+    toast(entry.pinned ? 'Fixat' : 'Defixat');
+  }
+
+  // Overflow menu
+  document.getElementById('detailMenuBtn').addEventListener('click', (e)=>{
+    e.stopPropagation();
+    overflowMenu.classList.toggle('show');
+  });
+  document.addEventListener('click', (e)=>{
+    if(!overflowMenu.contains(e.target) && e.target.id !== 'detailMenuBtn'){
+      overflowMenu.classList.remove('show');
+    }
+  });
+  overflowMenu.addEventListener('click', (e)=>{
+    const item = e.target.closest('.dropdown-item');
+    if(!item) return;
+    const action = item.dataset.action;
+    overflowMenu.classList.remove('show');
+    const entry = findEntry(openEntryId);
+    if(!entry) return;
+    switch(action){
+      case 'pin':
+        togglePin();
+        break;
+      case 'check':
+        pushUndo();
+        entry.checked = !entry.checked;
+        persist();
+        applyDetailColor(entry);
+        refreshMenuLabels(entry);
+        toast(entry.checked ? 'Marcat ca rezolvat' : 'Marcaj eliminat');
+        break;
+      case 'lock':
+        vibrate(entry.locked ? 14 : [10,40,10]);
+        if(!entry.locked){
+          const doLock = ()=>{
+            pushUndo();
+            entry.locked = true;
+            unlockedEntryIds.delete(entry.id);
+            persist();
+            applyDetailColor(entry);
+            applyLockState(entry);
+            renderDetailLines(entry);
+            refreshMenuLabels(entry);
+            toast('Notița a fost blocată');
+          };
+          if(!data.settings.pin){ openPinSetup(doLock); } else { doLock(); }
+        } else {
+          openPinPrompt('Introdu codul PIN pentru a debloca', ()=>{
+            pushUndo();
+            entry.locked = false;
+            persist();
+            applyDetailColor(entry);
+            applyLockState(entry);
+            renderDetailLines(entry);
+            refreshMenuLabels(entry);
+            toast('Notița a fost deblocată');
+          });
+        }
+        break;
+      case 'stick':
+        pushUndo();
+        entry.sticky = !entry.sticky;
+        persist();
+        applyDetailColor(entry);
+        refreshMenuLabels(entry);
+        toast(entry.sticky ? 'Fixată sus în listă' : 'Nu mai e fixată sus');
+        break;
+      case 'share':
+        doShare(entry);
+        break;
+      case 'duplicate':
+        duplicateEntry(entry);
+        break;
+      case 'checkboxes':
+        toggleLineType(entry, 'checkbox');
+        break;
+      case 'bullets':
+        toggleLineType(entry, 'bullet');
+        break;
+      case 'numbered':
+        toggleLineType(entry, 'number');
+        break;
+      case 'search':
+        openSearch();
+        break;
+      case 'archive':
+        pushUndo();
+        vibrate(14);
+        entry.archived = !entry.archived;
+        persist();
+        refreshMenuLabels(entry);
+        if(entry.archived){
+          closeDetail();
+          toast('Arhivată');
+        } else {
+          toast('Scoasă din arhivă');
+        }
+        break;
+      case 'delete':
+        pushUndo();
+        vibrate([10,30,10,30,10]);
+        entry.trashed = true;
+        persist();
+        detailPage.classList.add('hidden');
+        listPage.classList.remove('hidden');
+        renderBody();
+        toast('Mutată în coșul de gunoi');
+        break;
+      case 'cancel': break;
+    }
+  });
+
+  function duplicateEntry(entry){
+    pushUndo();
+    vibrate(14);
+    const clone = JSON.parse(JSON.stringify(entry));
+    clone.id = cryptoId();
+    clone.title = entry.title + ' (copie)';
+    clone.date = todayLabel();
+    clone.lines = (entry.lines||[]).map(l=>({...l, id:cryptoId()}));
+    clone.attachments = (entry.attachments||[]).map(a=>({...a, id:cryptoId()}));
+    clone.locked = false;
+    clone.archived = false;
+    clone.trashed = false;
+    const idx = data.entries.indexOf(entry);
+    data.entries.splice(idx+1, 0, clone);
+    persist();
+    closeDetail();
+    toast('Notiță duplicată');
+  }
+
+  function doShare(entry){
+    const bodyText = (entry.lines || []).map(l=>{
+      if(l.type==='checkbox') return (l.done ? '☑ ' : '☐ ') + l.text;
+      if(l.type==='bullet') return '• ' + l.text;
+      if(l.type==='number') return l.text;
+      return l.text;
+    }).join('\n');
+    const text = entry.title + (bodyText ? ('\n\n' + bodyText) : '');
+    if(navigator.share){
+      navigator.share({title: entry.title, text: text}).catch(()=>{});
+    } else if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(()=> toast('Copiat în clipboard')).catch(()=> toast('Nu s-a putut copia'));
+    } else {
+      toast('Distribuirea nu este disponibilă aici');
+    }
+  }
+
+  // Color picker (detail)
+  function pickDetailColor(id){
+    const entry = findEntry(openEntryId);
+    pushUndo();
+    entry.color = id;
+    persist();
+    applyDetailColor(entry);
+    renderColorRow(detailColorRow, entry.color, pickDetailColor);
+  }
+  document.getElementById('toolPaletteBtn').addEventListener('click', ()=>{
+    const entry = findEntry(openEntryId);
+    renderColorRow(detailColorRow, entry.color, pickDetailColor);
+    colorOverlay.classList.add('show');
+  });
+  document.getElementById('cancelColorBtn').addEventListener('click', ()=> colorOverlay.classList.remove('show'));
+  colorOverlay.addEventListener('click', (e)=>{ if(e.target===colorOverlay) colorOverlay.classList.remove('show'); });
+
+  // Move to (labels)
+  document.getElementById('toolLabelBtn').addEventListener('click', ()=>{
+    const entry = findEntry(openEntryId);
+    moveList.innerHTML = '';
+    data.tabs.forEach(tab=>{
+      const item = document.createElement('div');
+      item.className = 'label-item' + (tab.id===entry.tabId ? ' active-label' : '');
+      item.innerHTML = '<svg class="tag-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M20.6 12.6 12.7 20.5a2 2 0 0 1-2.8 0l-7.4-7.4a2 2 0 0 1 0-2.8L10.4 2.4H19a2 2 0 0 1 2 2v8.2Z"/></svg><span>'+tab.name+'</span>';
+      item.addEventListener('click', ()=>{
+        pushUndo();
+        entry.tabId = tab.id;
+        persist();
+        moveOverlay.classList.remove('show');
+        detailTabName.textContent = tab.name;
+        data.activeTab = tab.id;
+        renderTabs();
+        toast('Mutat în „' + tab.name + '"');
+      });
+      moveList.appendChild(item);
+    });
+    const noLabel = document.createElement('div');
+    noLabel.className = 'label-item';
+    noLabel.innerHTML = '<svg class="tag-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.6 12.6 12.7 20.5a2 2 0 0 1-2.8 0l-7.4-7.4a2 2 0 0 1 0-2.8L10.4 2.4H19a2 2 0 0 1 2 2v8.2Z"/></svg><span>(No label)</span>';
+    noLabel.addEventListener('click', ()=> toast('Demo — funcție vizuală'));
+    moveList.appendChild(noLabel);
+    moveOverlay.classList.add('show');
+  });
+  moveOverlay.addEventListener('click', (e)=>{ if(e.target===moveOverlay) moveOverlay.classList.remove('show'); });
+
+  // Reminder
+  document.getElementById('toolAlarmBtn').addEventListener('click', ()=>{
+    const entry = findEntry(openEntryId);
+    const now = new Date();
+    reminderDate.value = entry.reminder ? entry.reminder.date : now.toISOString().slice(0,10);
+    reminderTime.value = entry.reminder ? entry.reminder.time : '09:30';
+    reminderRepeat.value = entry.reminder ? entry.reminder.repeat : 'Does not repeat';
+    removeReminderBtn.style.display = entry.reminder ? 'inline-block' : 'none';
+    reminderOverlay.classList.add('show');
+  });
+  document.getElementById('cancelReminderBtn').addEventListener('click', ()=> reminderOverlay.classList.remove('show'));
+  reminderOverlay.addEventListener('click', (e)=>{ if(e.target===reminderOverlay) reminderOverlay.classList.remove('show'); });
+  document.getElementById('saveReminderBtn').addEventListener('click', ()=>{
+    const entry = findEntry(openEntryId);
+    pushUndo();
+    entry.reminder = { date: reminderDate.value, time: reminderTime.value, repeat: reminderRepeat.value };
+    persist();
+    reminderOverlay.classList.remove('show');
+    toast('Reminder salvat');
+  });
+  removeReminderBtn.addEventListener('click', ()=>{
+    const entry = findEntry(openEntryId);
+    pushUndo();
+    entry.reminder = null;
+    persist();
+    reminderOverlay.classList.remove('show');
+    toast('Reminder șters');
+  });
+
+  // ---------- Attachments: images, drawing, audio recording ----------
+  const imageFileInput = document.getElementById('imageFileInput');
+  const cameraFileInput = document.getElementById('cameraFileInput');
+  const drawOverlay = document.getElementById('drawOverlay');
+  const drawColorRow = document.getElementById('drawColorRow');
+  const drawCanvasEl = document.getElementById('drawCanvas');
+  const recordOverlay = document.getElementById('recordOverlay');
+  const recordStatus = document.getElementById('recordStatus');
+  const recordTimer = document.getElementById('recordTimer');
+  const recordToggleBtn = document.getElementById('recordToggleBtn');
+  const recordSaveBtn = document.getElementById('recordSaveBtn');
+
+  // ---------- Fullscreen image viewer with zoom ----------
+  const imageLightbox = document.getElementById('imageLightbox');
+  const lightboxImg = document.getElementById('lightboxImg');
+  let lbScale = 1, lbPanX = 0, lbPanY = 0;
+  let lbPinchStartDist = 0, lbPinchStartScale = 1;
+  let lbDragging = false, lbDragStartX = 0, lbDragStartY = 0, lbDragOrigX = 0, lbDragOrigY = 0;
+
+  function applyLightboxTransform(){
+    lightboxImg.style.transform = 'translate('+lbPanX+'px,'+lbPanY+'px) scale('+lbScale+')';
+  }
+  function openImageLightbox(src){
+    lightboxImg.src = src;
+    lbScale = 1; lbPanX = 0; lbPanY = 0;
+    applyLightboxTransform();
+    imageLightbox.classList.add('show');
+  }
+  function closeImageLightbox(){
+    imageLightbox.classList.remove('show');
+    lightboxImg.src = '';
+  }
+  document.getElementById('lightboxCloseBtn').addEventListener('click', closeImageLightbox);
+  imageLightbox.addEventListener('click', (e)=>{ if(e.target===imageLightbox) closeImageLightbox(); });
+
+  imageLightbox.addEventListener('wheel', (e)=>{
+    e.preventDefault();
+    lbScale = Math.min(6, Math.max(1, lbScale - e.deltaY*0.0015));
+    if(lbScale===1){ lbPanX=0; lbPanY=0; }
+    applyLightboxTransform();
+  }, {passive:false});
+
+  imageLightbox.addEventListener('touchstart', (e)=>{
+    if(e.touches.length===2){
+      const dx = e.touches[0].clientX-e.touches[1].clientX;
+      const dy = e.touches[0].clientY-e.touches[1].clientY;
+      lbPinchStartDist = Math.hypot(dx,dy);
+      lbPinchStartScale = lbScale;
+    } else if(e.touches.length===1 && lbScale>1){
+      lbDragging = true;
+      lbDragStartX = e.touches[0].clientX; lbDragStartY = e.touches[0].clientY;
+      lbDragOrigX = lbPanX; lbDragOrigY = lbPanY;
+    }
+  }, {passive:true});
+  imageLightbox.addEventListener('touchmove', (e)=>{
+    if(e.touches.length===2){
+      e.preventDefault();
+      const dx = e.touches[0].clientX-e.touches[1].clientX;
+      const dy = e.touches[0].clientY-e.touches[1].clientY;
+      const dist = Math.hypot(dx,dy);
+      lbScale = Math.min(6, Math.max(1, lbPinchStartScale * (dist/lbPinchStartDist)));
+      if(lbScale===1){ lbPanX=0; lbPanY=0; }
+      applyLightboxTransform();
+    } else if(lbDragging && e.touches.length===1){
+      e.preventDefault();
+      lbPanX = lbDragOrigX + (e.touches[0].clientX - lbDragStartX);
+      lbPanY = lbDragOrigY + (e.touches[0].clientY - lbDragStartY);
+      applyLightboxTransform();
+    }
+  }, {passive:false});
+  imageLightbox.addEventListener('touchend', ()=>{ lbDragging = false; });
+  lightboxImg.addEventListener('dblclick', ()=>{
+    lbScale = lbScale>1 ? 1 : 2.5;
+    lbPanX = 0; lbPanY = 0;
+    applyLightboxTransform();
+  });
+
+  function renderAttachments(entry){
+    const gallery = document.getElementById('attachmentsGallery');
+    gallery.innerHTML = '';
+    const atts = entry.attachments || [];
+    if(!atts.length) return;
+    const locked = isEffectivelyLocked(entry);
+    const images = atts.filter(a=>a.type==='image'||a.type==='drawing');
+    const audios = atts.filter(a=>a.type==='audio');
+    function makeDelBtn(att){
+      const del = document.createElement('button');
+      del.className = 'attach-del';
+      del.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+      del.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        pushUndo();
+        entry.attachments = entry.attachments.filter(a=>a.id!==att.id);
+        persist();
+        renderAttachments(entry);
+      });
+      return del;
+    }
+    if(images.length){
+      const grid = document.createElement('div');
+      grid.className = 'attach-grid';
+      images.forEach(att=>{
+        const thumb = document.createElement('div');
+        thumb.className = 'attach-thumb';
+        thumb.style.cursor = 'pointer';
+        const img = document.createElement('img');
+        img.src = att.dataUrl;
+        thumb.appendChild(img);
+        img.addEventListener('click', ()=> openImageLightbox(att.dataUrl));
+        if(!locked) thumb.appendChild(makeDelBtn(att));
+        grid.appendChild(thumb);
+      });
+      gallery.appendChild(grid);
+    }
+    audios.forEach(att=>{
+      const row = document.createElement('div');
+      row.className = 'attach-audio-row';
+      const audioEl = document.createElement('audio');
+      audioEl.controls = true;
+      audioEl.src = att.dataUrl;
+      row.appendChild(audioEl);
+      if(!locked) row.appendChild(makeDelBtn(att));
+      gallery.appendChild(row);
+    });
+  }
+
+  function addImageFiles(fileList){
+    const entry = findEntry(openEntryId);
+    if(!entry || isEffectivelyLocked(entry)) return;
+    const files = Array.from(fileList || []);
+    if(!files.length) return;
+    pushUndo();
+    files.forEach(file=>{
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        entry.attachments = entry.attachments || [];
+        entry.attachments.push({id:cryptoId(), type:'image', dataUrl: reader.result});
+        persist();
+        renderAttachments(entry);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  imageFileInput.addEventListener('change', (e)=>{ addImageFiles(e.target.files); imageFileInput.value=''; });
+  cameraFileInput.addEventListener('change', (e)=>{ addImageFiles(e.target.files); cameraFileInput.value=''; });
+
+  // Drawing
+  let drawCtx = null, drawing = false, drawColor = '#1c1c1e';
+  function setupDrawCanvas(){
+    const rect = drawCanvasEl.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    drawCanvasEl.width = rect.width * dpr;
+    drawCanvasEl.height = rect.height * dpr;
+    drawCtx = drawCanvasEl.getContext('2d');
+    drawCtx.scale(dpr, dpr);
+    drawCtx.fillStyle = '#ffffff';
+    drawCtx.fillRect(0, 0, rect.width, rect.height);
+    drawCtx.lineCap = 'round';
+    drawCtx.lineJoin = 'round';
+    drawCtx.lineWidth = 3.5;
+  }
+  function renderDrawColorRow(){
+    const palette = ['#1c1c1e','#e03131','#2f9e44','#1971c2','#f08c00','#9c36b5','#ffffff'];
+    drawColorRow.innerHTML = '';
+    palette.forEach(hex=>{
+      const sw = document.createElement('div');
+      sw.className = 'swatch' + (hex===drawColor ? ' selected' : '');
+      sw.style.background = hex;
+      sw.style.boxShadow = 'inset 0 0 0 1px rgba(255,255,255,0.3)';
+      sw.addEventListener('click', ()=>{ drawColor = hex; renderDrawColorRow(); });
+      drawColorRow.appendChild(sw);
+    });
+  }
+  function openDrawOverlay(){
+    drawOverlay.classList.add('show');
+    requestAnimationFrame(setupDrawCanvas);
+    renderDrawColorRow();
+  }
+  function drawPos(e){
+    const rect = drawCanvasEl.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+  drawCanvasEl.addEventListener('pointerdown', (e)=>{
+    if(!drawCtx) return;
+    drawing = true;
+    const p = drawPos(e);
+    drawCtx.strokeStyle = drawColor;
+    drawCtx.beginPath();
+    drawCtx.moveTo(p.x, p.y);
+    try{ drawCanvasEl.setPointerCapture(e.pointerId); }catch(err){}
+  });
+  drawCanvasEl.addEventListener('pointermove', (e)=>{
+    if(!drawing || !drawCtx) return;
+    e.preventDefault();
+    const p = drawPos(e);
+    drawCtx.lineTo(p.x, p.y);
+    drawCtx.stroke();
+  });
+  function endDraw(){ drawing = false; }
+  drawCanvasEl.addEventListener('pointerup', endDraw);
+  drawCanvasEl.addEventListener('pointercancel', endDraw);
+  document.getElementById('drawClearBtn').addEventListener('click', ()=>{
+    if(!drawCtx) return;
+    const rect = drawCanvasEl.getBoundingClientRect();
+    drawCtx.fillStyle = '#ffffff';
+    drawCtx.fillRect(0, 0, rect.width, rect.height);
+  });
+  document.getElementById('drawCancelBtn').addEventListener('click', ()=> drawOverlay.classList.remove('show'));
+  drawOverlay.addEventListener('click', (e)=>{ if(e.target===drawOverlay) drawOverlay.classList.remove('show'); });
+  document.getElementById('drawSaveBtn').addEventListener('click', ()=>{
+    const entry = findEntry(openEntryId);
+    if(!entry || isEffectivelyLocked(entry) || !drawCtx){ drawOverlay.classList.remove('show'); return; }
+    pushUndo();
+    entry.attachments = entry.attachments || [];
+    entry.attachments.push({id:cryptoId(), type:'drawing', dataUrl: drawCanvasEl.toDataURL('image/png')});
+    persist();
+    renderAttachments(entry);
+    drawOverlay.classList.remove('show');
+    toast('Desen salvat');
+  });
+
+  // Audio recording
+  let mediaRecorder = null, recordedChunks = [], recordStream = null, recordTimerInterval = null, recordSeconds = 0, pendingRecordingUrl = null;
+  function openRecordOverlay(){
+    recordStatus.textContent = 'Apasă butonul pentru a începe';
+    recordTimer.textContent = '00:00';
+    recordToggleBtn.textContent = '⏺';
+    recordToggleBtn.style.background = '#8b2c2c';
+    recordSaveBtn.style.display = 'none';
+    pendingRecordingUrl = null;
+    recordOverlay.classList.add('show');
+  }
+  recordToggleBtn.addEventListener('click', async ()=>{
+    if(!mediaRecorder || mediaRecorder.state === 'inactive'){
+      if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+        toast('Înregistrarea audio nu este disponibilă aici');
+        return;
+      }
+      try{
+        recordStream = await navigator.mediaDevices.getUserMedia({audio:true});
+      }catch(err){
+        toast('Acces la microfon refuzat sau indisponibil');
+        return;
+      }
+      recordedChunks = [];
+      try{ mediaRecorder = new MediaRecorder(recordStream); }
+      catch(err){ toast('Înregistrarea nu este suportată aici'); return; }
+      mediaRecorder.ondataavailable = (e)=>{ if(e.data && e.data.size>0) recordedChunks.push(e.data); };
+      mediaRecorder.onstop = ()=>{
+        const blob = new Blob(recordedChunks, {type: mediaRecorder.mimeType || 'audio/webm'});
+        const reader = new FileReader();
+        reader.onload = ()=>{
+          pendingRecordingUrl = reader.result;
+          recordSaveBtn.style.display = 'inline-block';
+          recordStatus.textContent = 'Înregistrare gata — apasă Salvează';
+        };
+        reader.readAsDataURL(blob);
+        if(recordStream) recordStream.getTracks().forEach(t=>t.stop());
+      };
+      mediaRecorder.start();
+      recordSeconds = 0;
+      recordTimer.textContent = '00:00';
+      recordStatus.textContent = 'Se înregistrează…';
+      recordToggleBtn.textContent = '⏹';
+      recordToggleBtn.style.background = '#333336';
+      clearInterval(recordTimerInterval);
+      recordTimerInterval = setInterval(()=>{
+        recordSeconds++;
+        const m = String(Math.floor(recordSeconds/60)).padStart(2,'0');
+        const s = String(recordSeconds%60).padStart(2,'0');
+        recordTimer.textContent = m + ':' + s;
+      }, 1000);
+    } else {
+      mediaRecorder.stop();
+      clearInterval(recordTimerInterval);
+      recordToggleBtn.textContent = '⏺';
+      recordToggleBtn.style.background = '#8b2c2c';
+    }
+  });
+  document.getElementById('recordCancelBtn').addEventListener('click', ()=>{
+    if(mediaRecorder && mediaRecorder.state !== 'inactive'){ mediaRecorder.stop(); }
+    clearInterval(recordTimerInterval);
+    if(recordStream){ recordStream.getTracks().forEach(t=>t.stop()); }
+    recordOverlay.classList.remove('show');
+  });
+  recordOverlay.addEventListener('click', (e)=>{ if(e.target===recordOverlay){ document.getElementById('recordCancelBtn').click(); }});
+  recordSaveBtn.addEventListener('click', ()=>{
+    const entry = findEntry(openEntryId);
+    recordOverlay.classList.remove('show');
+    if(!entry || !pendingRecordingUrl || isEffectivelyLocked(entry)) return;
+    pushUndo();
+    entry.attachments = entry.attachments || [];
+    entry.attachments.push({id:cryptoId(), type:'audio', dataUrl: pendingRecordingUrl});
+    persist();
+    renderAttachments(entry);
+    toast('Înregistrare salvată');
+  });
+
+  // Attachment sheet
+  document.getElementById('toolAttachBtn').addEventListener('click', ()=> attachOverlay.classList.add('show'));
+  document.getElementById('cancelAttachBtn').addEventListener('click', ()=> attachOverlay.classList.remove('show'));
+  attachOverlay.addEventListener('click', (e)=>{
+    if(e.target===attachOverlay){ attachOverlay.classList.remove('show'); return; }
+    const item = e.target.closest('.attach-item');
+    if(!item) return;
+    const entry = findEntry(openEntryId);
+    if(entry && isEffectivelyLocked(entry)){ attachOverlay.classList.remove('show'); toast('Notița este blocată'); return; }
+    attachOverlay.classList.remove('show');
+    const name = item.dataset.name;
+    try{
+      if(name === 'Choose image') imageFileInput.click();
+      else if(name === 'Take photo') cameraFileInput.click();
+      else if(name === 'Drawing') openDrawOverlay();
+      else if(name === 'Recording') openRecordOverlay();
+    }catch(err){
+      toast('Nu s-a putut deschide — încearcă din browser, nu din fereastra de previzualizare');
+    }
+  });
+
+  // ---------- Autosave when the app is closed / backgrounded ----------
+  function forceSaveActiveEditable(){
+    const el = document.activeElement;
+    if(el && (el.classList.contains('dl-text') || el === detailTitleInput || el.classList.contains('ci-text'))){
+      el.blur();
+    }
+    saveDetailFields();
+    persist();
+  }
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden){ forceSaveActiveEditable(); }});
+  window.addEventListener('pagehide', forceSaveActiveEditable);
+  window.addEventListener('beforeunload', forceSaveActiveEditable);
+
+  renderTabs();
+  renderBody();
+})();
+</script>
+</body>
+</html>
